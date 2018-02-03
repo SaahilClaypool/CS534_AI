@@ -11,14 +11,24 @@ class Board(object):
         self.industrial = industrial
         self.commerical = commerical
         self.residential = residential
-        self.current_state = current_state
+        self.current_state = current_state 
+        self.width = width
+        self.height = height
     
     def __str__(self):
         buildstr = "Industrial: {}\nCommerical: {}\nResidential: {}\n"\
-            .format(self.industrial, self.commerical, self.residential)
+            .format(self.industrial, self.commerical, self.residential)\
+            + "Height: {} Width: {}\n".format(self.height, self.width)
         for r in self.current_state:
             buildstr += str(r) + "\n"
         return buildstr
+    
+    def score(self) -> int:
+        sumscore = 0
+        for r in self.current_state:
+            for c in r:
+                sumscore += c.score()
+        return sumscore 
 
     @staticmethod
     def read_from_file(filename: str) -> 'Board':
@@ -27,7 +37,6 @@ class Board(object):
             indust = int(infile.readline())
             commer = int(infile.readline())
             resid = int(infile.readline())
-
             ## now  read each line
             r = 0
             c = 0
@@ -47,17 +56,25 @@ class Board(object):
     def main():
         board = Board.read_from_file("./sampleInput.txt")
         print(board)
+        industrial = Industrial(2,2,0)
+        res = Resident(2,2,0)
+        comm = Commerical(2,2,0)
+
+        print("I score: ", industrial.score(board))
+        print("res score: ", res.score(board))
+        print("comm score: ", comm.score(board))
 
 
 class Tile(object):
-    def __init__(self, typename: str, r: int, c: int):
+    def __init__(self, typename: str, r: int, c: int, cost: int):
         self.typename = typename
         self.r = r
         self.c = c
+        self.cost = cost
     
     def __str__(self):
-        return "<{}: {} {}>"\
-            .format(self.typename, self.r, self.c)
+        return "<{}: r:{} c:{} cost:{:2}>"\
+            .format(self.typename, self.r, self.c, self.cost)
     
     def __repr__(self):
         return self.__str__()
@@ -67,6 +84,15 @@ class Tile(object):
 
     def score(self, board: 'Board') -> int:
         return 0
+
+    def tiles_within(self, board: 'Board', distance: int, typename: str = "*"):
+        close = []
+        for r in board.current_state:
+            for c in r:
+                if (self.dist(c) <= distance and\
+                    (typename == "*" or typename == c.typename)):
+                    close.append(c)
+        return close
 
     @staticmethod
     def tile_from_str(inp: str, r: int, c: int):
@@ -80,29 +106,62 @@ class Tile(object):
 
 class Scene(Tile):
     def __init__(self, r: int, c: int):
-        Tile.__init__(self, "Scene", r, c)
+        Tile.__init__(self, "Scene", r, c, -1)
 
 
 class Toxic(Tile):
     def __init__(self, r: int, c: int):
-        Tile.__init__(self, "Toxic", r, c)
+        Tile.__init__(self, "Toxic", r, c, -1)
 
 
 class Basic(Tile):
     def __init__(self, r: int, c: int, cost: int):
-        Tile.__init__(self, "Basic", r, c)
+        Tile.__init__(self, "Basic", r, c, cost)
     
 class Resident(Tile):
     def __init__(self, r: int, c: int, cost: int):
-        Tile.__init__(self, "Resident", r, c)
+        Tile.__init__(self, "Resident", r, c, cost)
+
+    def score(self, board: 'Board') -> int:
+        toxic_tiles = self.tiles_within(board, 2, "Toxic")
+        toxic_score = +10 * len(toxic_tiles)
+
+        scenic_tiles = self.tiles_within(board, 2, "Scene")
+        scenic_score = -10 * len(scenic_tiles)
+
+        industrial_tiles = self.tiles_within(board, 3, "Industrial")
+        industrial_score = -5 * len(industrial_tiles)
+
+        commericial_tiles = self.tiles_within(board, 3, "Commerical")
+        commericial_score = -5 * len(commericial_tiles)
+
+        return toxic_score + scenic_score + industrial_score + commericial_score + self.cost
 
 class Commerical(Tile):
     def __init__(self, r: int, c: int, cost: int):
-        Tile.__init__(self, "Commericial", r, c)
+        Tile.__init__(self, "Commericial", r, c, cost)
+    
+    def score(self, board: 'Board') -> int:
+        resident_tiles = self.tiles_within(board, 3, "Resident")
+        resident_score = 5 * len(resident_tiles)
+
+        commerical_tiles = self.tiles_within(board, 2, "Commercial")
+        competition_score = -5 * len(commerical_tiles)
+        return resident_score + competition_score + self.cost
+
 
 class Industrial(Tile):
     def __init__(self, r: int, c: int, cost: int):
-        Tile.__init__(self, "Industrial", r, c)
+        Tile.__init__(self, "Industrial", r, c, cost)
+    
+    def score(self, board: 'Board') -> int:
+        toxic_tiles = self.tiles_within(board, 2, "Toxic")
+        toxic_score = -10 * len(toxic_tiles)
+
+        industrial_tiles = self.tiles_within(board, 2, "Industrial")
+        indust_score = len(industrial_tiles) * 3
+
+        return toxic_score + self.cost
 
 if __name__ == "__main__":
     Board.main()
