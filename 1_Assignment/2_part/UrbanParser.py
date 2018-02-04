@@ -116,7 +116,7 @@ class Tile(object):
         elif (typename == "Commercial"):
             return Commerical(r,c,cost)
         elif (typename == "Industrial"):
-            return Commerical(r,c,cost)
+            return Industrial(r,c,cost)
 
 
 class Scene(Tile):
@@ -150,7 +150,7 @@ class Resident(Tile):
         commericial_tiles = self.tiles_within(board, 3, "Commerical")
         commericial_score = -5 * len(commericial_tiles)
 
-        return toxic_score + scenic_score + industrial_score + commericial_score + self.cost
+        return toxic_score + scenic_score + industrial_score + commericial_score - self.cost
 
 class Commerical(Tile):
     def __init__(self, r: int, c: int, cost: int):
@@ -162,7 +162,7 @@ class Commerical(Tile):
 
         commerical_tiles = self.tiles_within(board, 2, "Commercial")
         competition_score = -5 * len(commerical_tiles)
-        return resident_score + competition_score + self.cost
+        return resident_score + competition_score - self.cost
 
 
 class Industrial(Tile):
@@ -176,7 +176,7 @@ class Industrial(Tile):
         industrial_tiles = self.tiles_within(board, 2, "Industrial")
         indust_score = len(industrial_tiles) * 3
 
-        return toxic_score + self.cost + indust_score
+        return toxic_score - self.cost + indust_score
 
 if __name__ == "__main__":
     Board.main()

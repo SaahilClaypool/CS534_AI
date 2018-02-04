@@ -88,19 +88,16 @@ class HillClimb(object):
                     best_board = new_board
         
         old_score = self.current_state.score()
-        print("Score was: ", old_score, "Board was: ", self.current_state)
-        print("Best score is: ", best_score, "board is: ", best_board)
-
         if(best_score != old_score):
             self.current_state = best_board
-            print("CLIMBING!!")
+            print("CLIMBING!! from ", self.current_state.score())
             self.next_state()
 
         return best_board
 
 def main():
     print ("hello world")
-    board : Board = Board.read_from_file("testInput.txt")
+    board : Board = Board.read_from_file("biggerSampleInput.txt")
     print(board)
 
     alg : HillClimb = HillClimb(board)
@@ -109,6 +106,7 @@ def main():
     print(alg)
 
     alg.next_state()
+    print(alg)
     ## algorithm
 
 if __name__ == "__main__":
