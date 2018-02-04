@@ -27,7 +27,7 @@ class Board(object):
         sumscore = 0
         for r in self.current_state:
             for c in r:
-                sumscore += c.score()
+                sumscore += c.score(self)
         return sumscore 
 
     @staticmethod
@@ -93,7 +93,7 @@ class Tile(object):
                     (typename == "*" or typename == c.typename)):
                     close.append(c)
         return close
-
+    
     @staticmethod
     def tile_from_str(inp: str, r: int, c: int):
         if (inp is "S"):
@@ -102,11 +102,26 @@ class Tile(object):
             return Toxic(r, c)
         else:
             return Basic(r, c, int(inp))
+    
+    @staticmethod
+    def make_tile(typename: str, r: int, c: int, cost: int):
+        if (typename == "Scene"):
+            return Scene(r,c)
+        elif (typename == "Toxic"):
+            return Toxic(r,c)
+        elif (typename == "Basic"):
+            return Basic(r,c,cost)
+        elif (typename == "Resident"):
+            return Resident(r,c,cost)
+        elif (typename == "Commercial"):
+            return Commerical(r,c,cost)
+        elif (typename == "Industrial"):
+            return Commerical(r,c,cost)
 
 
 class Scene(Tile):
     def __init__(self, r: int, c: int):
-        Tile.__init__(self, "Scene", r, c, -1)
+        Tile.__init__(self, "Scene", r, c, 0)
 
 
 class Toxic(Tile):
@@ -161,7 +176,7 @@ class Industrial(Tile):
         industrial_tiles = self.tiles_within(board, 2, "Industrial")
         indust_score = len(industrial_tiles) * 3
 
-        return toxic_score + self.cost
+        return toxic_score + self.cost + indust_score
 
 if __name__ == "__main__":
     Board.main()
