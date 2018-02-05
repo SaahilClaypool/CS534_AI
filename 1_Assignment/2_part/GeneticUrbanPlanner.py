@@ -19,9 +19,9 @@ def main():
         #TODO actually take input file arument
 
     main_board = Board.read_from_file("./biggerSampleInput.txt")
-    pop = Population(max_population, elite_count, cull_count, mutation_probability, 0, main_board, [], [])
     #start timing
     time_end = time.time() + runtime_seconds
+    pop = Population(max_population, elite_count, cull_count, mutation_probability, 0, main_board, [], [], time.time())
     #seed initial generation
     seed_generation(pop)
     pop.finalize_generation()
@@ -29,7 +29,8 @@ def main():
     update_generations(pop, time_end)
     #return the best individual after generation updating is completed
     best_ind = pop.select_best_individual()
-    print("Generation: "+str(pop.gen_number))
+    print("Generation: ", pop.gen_number)
+    print("Time achieved: ", pop.top_achieved_time)
     print(best_ind)
     print("Best board: "+str(decode_board(best_ind.characteristic, main_board)))
 
@@ -48,26 +49,25 @@ def seed_generation(p: 'Population'):
         r_c = b.residential
         c_c = b.commercial
         i_c = b.industrial
-        new_state = list(encode_board(b.current_state))
+        new_state = encode_board(b.current_state)
         encoded_len = len(new_state)-1
         while r_c+c_c+i_c > 0:
             i = random.randint(0, encoded_len)
-            if new_state[i] not in ["N", "X", "C", "I", "R"]:
+            if new_state[i] == "O":
                 if r_c > 0:
-                    new_state[i] = "R"
+                    new_state = new_state[:i] + "R" + new_state[i+1:]
                     r_c -= 1
                 elif c_c > 0:
-                    new_state[i] = "C"
+                    new_state = new_state[:i] + "C" + new_state[i+1:]
                     c_c -= 1
                 else:
-                    new_state[i] = "I"
+                    new_state = new_state[:i] + "I" + new_state[i+1:]
                     i_c -= 1
-        new_state = "".join(new_state)
         p.add_to_current_generation(Individual(new_state, b))
         count += 1
 
 def encode_board(b: Sequence[Sequence['Tile']]) -> str:
-    encoded_b = []
+    encoded_b = ""
     for row in b:
         for col in row:
             t = col.typename
@@ -143,7 +143,7 @@ def decode_board(characteristic: str, main_board: 'Board') -> 'Board':
 
 class Population():
     def __init__(self, m: int, e: int, c: int, p: int,  g: int, b: Board,
-                 current_gen: Sequence['Individual'], next_gen: Sequence['Individual']):
+                 current_gen: Sequence['Individual'], next_gen: Sequence['Individual'], time_start: float):
         self.gen_number = g
         self.main_board = b
         self.max_population = m
@@ -155,6 +155,8 @@ class Population():
         self.cull_count = c
         self.mutation_probability = p
         self.sum_score = 0 #sum_score will be used for weighed selection of individuals
+        self.time_start = time_start
+        self.top_achieved_time = 0
 
     def cull_the_weak(self):
         self.current_generation = self.current_generation[0:self.max_population-self.cull_count-1]
@@ -221,6 +223,8 @@ class Population():
             for i in range(0, len(self.next_generation)):
                 if child.score > self.next_generation[i].score:
                     self.next_generation.insert(i, child)
+                    if i == 0:
+                        self.top_achieved_time = time.time() - self.time_start
                     return
             self.next_generation.append(child)
         else:
@@ -241,7 +245,6 @@ class Population():
         #excess occurences of C,I, and R will be converted into Os. excess Os will then be
         #converted into C,I, and R as necessary
         #work with the string as a list to make replacing easier
-        result_list = list(c)
         Cdif = c.count("C")-Cc
         C_indices = [m.start() for m in re.finditer("C", c)]
         Idif = c.count("I")-Ic
@@ -251,55 +254,55 @@ class Population():
         #remove excess C/I/R
         while Cdif > 0:
             i = random.choice(C_indices)
-            result_list[i] = "O"
+            c = c[:i] + "O" + c[i+1:]
             C_indices.remove(i)
             Cdif -= 1
         while Idif > 0:
             i = random.choice(I_indices)
-            result_list[i] = "O"
+            c = c[:i] + "O" + c[i+1:]
             I_indices.remove(i)
             Idif -= 1
         while Rdif > 0:
             i = random.choice(R_indices)
-            result_list[i] = "O"
+            c = c[:i] + "O" + c[i+1:]
             R_indices.remove(i)
             Rdif -= 1
         #excess C/I/R are now excess Os
-        Odif = "".join(result_list).count("O")-Oc
-        O_indices = [m.start() for m in re.finditer("O", "".join(result_list))]
+        Odif = c.count("O")-Oc
+        O_indices = [m.start() for m in re.finditer("O", c)]
         while Odif > 0:
             while Cdif < 0:
                 i = random.choice(O_indices)
-                result_list[i] = "C"
+                c = c[:i] + "C" + c[i + 1:]
                 O_indices.remove(i)
                 Cdif += 1
                 Odif -= 1
             while Idif < 0:
                 i = random.choice(O_indices)
-                result_list[i] = "I"
+                c = c[:i] + "I" + c[i+1:]
                 O_indices.remove(i)
                 Idif += 1
                 Odif -= 1
             while Rdif < 0:
                 i = random.choice(O_indices)
-                result_list[i] = "R"
+                c = c[:i] + "R" + c[i + 1:]
                 O_indices.remove(i)
                 Rdif += 1
                 Odif -= 1
         #mutation will swap two elements, if those elements aren't N or X
+        clen = len(c)-1
         if random.uniform(0, 1) < self.mutation_probability:
-            swap1 = random.randint(0, len(result_list)-1)
-            while result_list[swap1] == "N" or result_list[swap1] == "X":
-                swap1 = random.randint(0, len(result_list)-1)
-            swap2 = random.randint(0, len(result_list) - 1)
-            while result_list[swap2] == "N" or result_list[swap2] == "X":
-                swap2 = random.randint(0, len(result_list) - 1)
-            temp = result_list[swap1]
-            result_list[swap1] = result_list[swap2]
-            result_list[swap2] = temp
-
-        repaired_str = "".join(result_list)
-        return repaired_str
+            swap1 = random.randint(0, clen)
+            while c[swap1] == "N" or c[swap1] == "X":
+                swap1 = random.randint(0, clen)
+            swap2 = random.randint(0, clen)
+            while c[swap2] == "N" or c[swap2] == "X":
+                swap2 = random.randint(0, clen)
+            temp1 = c[swap1]
+            temp2 = c[swap2]
+            c = c[:swap1] + temp2 + c[swap1+1:]
+            c = c[:swap2] + temp1 + c[swap2+1:]
+        return c
 
 
     def finalize_generation(self):
