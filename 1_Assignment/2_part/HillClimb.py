@@ -17,10 +17,10 @@ class HillClimb(object):
     def init_board(self):
         # randomly place all tiles to start hillclimb
         # note: when moving off tile, set it to old value in original board
-        for _ in range(self.original_state.commerical):
+        for _ in range(self.original_state.commercial):
 
             spot = self.randspot()
-            new_spot = Commerical(spot.r, spot.c, spot.cost)
+            new_spot = Commercial(spot.r, spot.c, spot.cost)
             self.set_spot(self.current_state, new_spot)
         
         for _ in range(self.original_state.industrial):
@@ -65,7 +65,7 @@ class HillClimb(object):
     def get_moveable(self):
         for r in self.current_state.current_state:
             for c in r:
-                if (c.typename == "Industrial" or c.typename == "Commerical" or\
+                if (c.typename == "Industrial" or c.typename == "Commercial" or\
                     c.typename == "Resident"):
                     yield c
 

@@ -6,18 +6,18 @@ from typing import Type, Sequence
 
 class Board(object):
 
-    def __init__(self, industrial: int, commerical: int, residential: int,
+    def __init__(self, industrial: int, commercial: int, residential: int,
                  width: int, height: int, current_state: Sequence[Sequence['Tile']]):
         self.industrial = industrial
-        self.commerical = commerical
+        self.commercial = commercial
         self.residential = residential
         self.current_state = current_state 
         self.width = width
         self.height = height
     
     def __str__(self):
-        buildstr = "Industrial: {}\nCommerical: {}\nResidential: {}\n"\
-            .format(self.industrial, self.commerical, self.residential)\
+        buildstr = "Industrial: {}\nCommercial: {}\nResidential: {}\n"\
+            .format(self.industrial, self.commercial, self.residential)\
             + "Height: {} Width: {}\n".format(self.height, self.width)
         for r in self.current_state:
             buildstr += str(r) + "\n"
@@ -54,11 +54,11 @@ class Board(object):
 
     @staticmethod
     def main():
-        board = Board.read_from_file("./sampleInput.txt")
+        board = Board.read_from_file("./biggerSampleInput.txt")
         print(board)
         industrial = Industrial(2,2,0)
         res = Resident(2,2,0)
-        comm = Commerical(2,2,0)
+        comm = Commercial(2,2,0)
 
         print("I score: ", industrial.score(board))
         print("res score: ", res.score(board))
@@ -114,7 +114,7 @@ class Tile(object):
         elif (typename == "Resident"):
             return Resident(r,c,cost)
         elif (typename == "Commercial"):
-            return Commerical(r,c,cost)
+            return Commercial(r,c,cost)
         elif (typename == "Industrial"):
             return Industrial(r,c,cost)
 
@@ -147,12 +147,12 @@ class Resident(Tile):
         industrial_tiles = self.tiles_within(board, 3, "Industrial")
         industrial_score = -5 * len(industrial_tiles)
 
-        commericial_tiles = self.tiles_within(board, 3, "Commerical")
+        commericial_tiles = self.tiles_within(board, 3, "Commercial")
         commericial_score = -5 * len(commericial_tiles)
 
         return toxic_score + scenic_score + industrial_score + commericial_score - self.cost
 
-class Commerical(Tile):
+class Commercial(Tile):
     def __init__(self, r: int, c: int, cost: int):
         Tile.__init__(self, "Commericial", r, c, cost)
     
@@ -160,8 +160,8 @@ class Commerical(Tile):
         resident_tiles = self.tiles_within(board, 3, "Resident")
         resident_score = 5 * len(resident_tiles)
 
-        commerical_tiles = self.tiles_within(board, 2, "Commercial")
-        competition_score = -5 * len(commerical_tiles)
+        commercial_tiles = self.tiles_within(board, 2, "Commercial")
+        competition_score = -5 * len(commercial_tiles)
         return resident_score + competition_score - self.cost
 
 

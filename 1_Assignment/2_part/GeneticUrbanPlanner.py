@@ -9,10 +9,10 @@ from typing import List
 from UrbanParser import *
 
 def main():
-    max_population = 200
+    max_population = 60
     elite_count = 15
     cull_count = 20
-    mutation_probability = 0.05
+    mutation_probability = 0.1
     runtime_seconds = 10.0
 
     #for arg in sys.argv[1:]:
@@ -46,51 +46,34 @@ def seed_generation(p: 'Population'):
     count = 0
     while count < p.max_population:
         r_c = b.residential
-        c_c = b.commerical
+        c_c = b.commercial
         i_c = b.industrial
-        new_state = list(encode_board(b.current_state))
+        new_state = encode_board(b.current_state)
         encoded_len = len(new_state)-1
         while r_c+c_c+i_c > 0:
             i = random.randint(0, encoded_len)
-            if new_state[i] not in ["N", "X", "C", "I", "R"]:
+            select_tile = new_state[i]
+            if select_tile.typename not in ["Toxic", "Resident", "Commercial", "Industrial"]:
                 if r_c > 0:
-                    new_state[i] = "R"
+                    new_state[i] = Resident(select_tile.r, select_tile.c, select_tile.cost)
                     r_c -= 1
                 elif c_c > 0:
-                    new_state[i] = "C"
+                    new_state[i] = Commercial(select_tile.r, select_tile.c, select_tile.cost)
                     c_c -= 1
                 else:
-                    new_state[i] = "I"
+                    new_state[i] = Industrial(select_tile.r, select_tile.c, select_tile.cost)
                     i_c -= 1
-        new_state = "".join(new_state)
         p.add_to_current_generation(Individual(new_state, b))
         count += 1
 
-def encode_board(b: Sequence[Sequence['Tile']]) -> str:
-    encoded_b = []
-    for row in b:
-        for col in row:
-            t = col.typename
-            if t == "Industrial":
-                encoded_b += "I"
-            elif t == "Commercial":
-                encoded_b += "C"
-            elif t == "Resident":
-                encoded_b += "R"
-            elif t == "Toxic":
-                encoded_b += "X"
-            elif t == "Scene":
-                encoded_b += "O"
-            else:
-                #basic
-                encoded_b += "O"
-        encoded_b += "N" #add newline encoding
-    encoded_b = encoded_b[:-1] #remove the last letter, excess "N"
+def encode_board(b: Sequence[Sequence['Tile']]) -> Sequence['Tile']:
+    encode = lambda l: [item for sublist in l for item in sublist]
+    encoded_b = encode(b)
     return encoded_b
 
 
 class Individual():
-    def __init__(self, c: str, b: Board):
+    def __init__(self, c: Sequence['Tile'], b: Board):
         # the characteristic will be a string representing the board for this individual
         # String encoding the board will be as follows:
         # X: Toxic, S: Scene, R: Residential, C: Commercial, I: Industrial, S
@@ -99,47 +82,27 @@ class Individual():
         self.score = decode_and_score(c, b)
 
     def __str__(self):
-        content_str = "Characteristic String: "+self.characteristic+"\nScore: "+str(self.score)
+        content_str = "Characteristic String: "+str(self.characteristic)+"\nScore: "+str(self.score)
         return content_str
 
-def decode_and_score(characteristic: str, main_board: 'Board') -> int:
+def decode_and_score(characteristic: Sequence['Tile'], main_board: 'Board') -> int:
     #return score of a dummy board created using the given tiles
     return decode_board(characteristic, main_board).score()
 
-def decode_board(characteristic: str, main_board: 'Board') -> 'Board':
-    r = 0
-    c = 0
+def decode_board(characteristic: Sequence['Tile'], main_board: 'Board') -> 'Board':
+    r = main_board.height
+    c = main_board.width
     tiles = []
     cur_row = []
-    for letter in characteristic:
-        # the letter N will encode a new row
-        if letter == "N":
-            r += 1
-            c = 0
+    count = 0
+    for tile in characteristic:
+        cur_row.append(tile)
+        count += 1
+        if count == c:
             tiles.append(cur_row)
+            count = 0
             cur_row = []
-        else:
-            # Otherwise figure out what tile should be placed here
-            cur_tile = main_board.current_state[r][c]
-            cur_name = cur_tile.typename
-            cur_cost = cur_tile.cost
-            if cur_name != "Toxic":
-                if letter == "R":
-                    cur_row.append(Resident(r, c, cur_cost))
-                elif letter == "C":
-                    cur_row.append(Commerical(r, c, cur_cost))
-                elif letter == "I":
-                    cur_row.append(Industrial(r, c, cur_cost))
-                elif cur_name == "Scene":
-                    cur_row.append(Scene(r, c))
-                else:  # only other possibility is an empty basic tile
-                    cur_row.append(Basic(r, c, cur_cost))
-            else:
-                cur_row.append(Toxic(r, c))
-            c += 1
-    tiles.append(cur_row)
-    r += 1
-    return Board(main_board.industrial, main_board.commerical, main_board.residential, c, r, tiles)
+    return Board(main_board.industrial, main_board.commercial, main_board.residential, c, r, tiles)
 
 class Population():
     def __init__(self, m: int, e: int, c: int, p: int,  g: int, b: Board,
@@ -165,26 +128,22 @@ class Population():
     def select_pair_and_reproduce(self):
         #use fitness proportionate selection
         r1 = random.uniform(0, 1) * self.sum_score
-        i1 = None
+        i1 = self.current_generation[0]
         for i in self.current_generation:
             r1 -= i.score
             if r1 < 0:
                 i1 = i
                 break
-        if i1 is None:
-            i1 = self.current_generation[0]
         r2 = random.uniform(0, 1) * self.sum_score
-        i2 = None
+        i2 = self.current_generation[1]
         for i in self.current_generation:
             r2 -= i.score
             if r2 < 0:
                 #if selected individual is same as i1, choose the previous one
-                if i != i1:
-                    i2 = i
-                    break
-                else:
+                i2 = i
+                if i1 == i2:
                     id2 = self.current_generation.index(i)
-                    if id2 != 0:
+                    if id2 > 0:
                         i2 = self.current_generation[id2-1]
                     else:
                         i2 = self.current_generation[id2+1]
@@ -196,10 +155,10 @@ class Population():
         p1_len = len(p1_c)
         #number of each type of character within p1_c will be used for repair purposes
         #X and N should not have to be checked since crossover wont affect them
-        C_count = p1_c.count("C")
-        I_count = p1_c.count("I")
-        R_count = p1_c.count("R")
-        O_count = p1_c.count("O")
+        C_count = p1_c.count(Commercial.__class__)
+        I_count = p1_c.count(Industrial.__class__)
+        R_count = p1_c.count(Resident.__class__)
+        O_count = p1_c.count(Basic.__class__) + p1_c.count(Scene.__class__)
         #two point crossover will be used
         cross_start = random.randint(0, p1_len-2)
         cross_end = random.randint(cross_start, p1_len-1)
@@ -236,70 +195,74 @@ class Population():
         else:
             self.current_generation.append(child)
 
-    def repair_and_mutate(self, c: str, Cc: int, Ic: int, Rc: int, Oc: int) -> str:
+    def repair_and_mutate(self, c: Sequence['Tile'], Cc: int, Ic: int, Rc: int, Oc: int) -> str:
         #repair will operate by checking the occurences of C,I,R, and O in the string
         #excess occurences of C,I, and R will be converted into Os. excess Os will then be
         #converted into C,I, and R as necessary
         #work with the string as a list to make replacing easier
-        result_list = list(c)
-        Cdif = c.count("C")-Cc
-        C_indices = [m.start() for m in re.finditer("C", c)]
-        Idif = c.count("I")-Ic
-        I_indices = [m.start() for m in re.finditer("I", c)]
-        Rdif = c.count("R")-Rc
-        R_indices = [m.start() for m in re.finditer("R", c)]
+        Cdif = c.count(Commercial.__class__)-Cc
+        C_indices = [i for i, x in enumerate(c) if x.__class__ == Commercial.__class__]
+        Idif = c.count(Industrial.__class__)-Ic
+        I_indices = [i for i, x in enumerate(c) if x.__class__ == Industrial.__class__]
+        Rdif = c.count(Resident.__class__)-Rc
+        R_indices = [i for i, x in enumerate(c) if x.__class__ == Resident.__class__]
         #remove excess C/I/R
         while Cdif > 0:
             i = random.choice(C_indices)
-            result_list[i] = "O"
+            loc_r = i.r
+            loc_c = i.c
+            loc_flat = self.main_board.width*loc_r+loc_c
+            c[loc_flat] = self.main_board.current_state[loc_r][loc_c]
             C_indices.remove(i)
             Cdif -= 1
         while Idif > 0:
             i = random.choice(I_indices)
-            result_list[i] = "O"
-            I_indices.remove(i)
+            loc_r = i.r
+            loc_c = i.c
+            loc_flat = self.main_board.width*loc_r+loc_c
+            c[loc_flat] = self.main_board.current_state[loc_r][loc_c]
             Idif -= 1
         while Rdif > 0:
             i = random.choice(R_indices)
-            result_list[i] = "O"
-            R_indices.remove(i)
+            loc_r = i.r
+            loc_c = i.c
+            loc_flat = self.main_board.width*loc_r+loc_c
+            c[loc_flat] = self.main_board.current_state[loc_r][loc_c]
             Rdif -= 1
-        #excess C/I/R are now excess Os
-        Odif = "".join(result_list).count("O")-Oc
-        O_indices = [m.start() for m in re.finditer("O", "".join(result_list))]
+        #excess C/I/R are now excess Open/Scenes
+        Odif = c.count(Basic.__class__)+c.count(Scene.__class__)-Oc
+        O_indices = [i for i, x in enumerate(c) if x.__class__ == Basic.__class__ or x.__class__ == Scene.__class__]
         while Odif > 0:
             while Cdif < 0:
                 i = random.choice(O_indices)
-                result_list[i] = "C"
+                c[i] = Commercial(i.r, i.c, i.cost)
                 O_indices.remove(i)
                 Cdif += 1
                 Odif -= 1
             while Idif < 0:
                 i = random.choice(O_indices)
-                result_list[i] = "I"
+                c[i] = Industrial(i.r, i.c, i.cost)
                 O_indices.remove(i)
                 Idif += 1
                 Odif -= 1
             while Rdif < 0:
                 i = random.choice(O_indices)
-                result_list[i] = "R"
+                c[i] = Resident(i.r, i.c, i.cost)
                 O_indices.remove(i)
                 Rdif += 1
                 Odif -= 1
         #mutation will swap two elements, if those elements aren't N or X
         if random.uniform(0, 1) < self.mutation_probability:
-            swap1 = random.randint(0, len(result_list)-1)
-            while result_list[swap1] == "N" or result_list[swap1] == "X":
-                swap1 = random.randint(0, len(result_list)-1)
-            swap2 = random.randint(0, len(result_list) - 1)
-            while result_list[swap2] == "N" or result_list[swap2] == "X":
-                swap2 = random.randint(0, len(result_list) - 1)
-            temp = result_list[swap1]
-            result_list[swap1] = result_list[swap2]
-            result_list[swap2] = temp
-
-        repaired_str = "".join(result_list)
-        return repaired_str
+            swap1 = random.randint(0, len(c)-1)
+            while c[swap1].__class__ == Toxic.__class__:
+                swap1 = random.randint(0, len(c)-1)
+            swap2 = random.randint(0, len(c) - 1)
+            while c[swap1].__class__ == Toxic.__class__:
+                swap2 = random.randint(0, len(c) - 1)
+            temp = c[swap1]
+            c[swap1] = c[swap2]
+            c[swap2] = temp
+        return c
 
 
     def finalize_generation(self):
