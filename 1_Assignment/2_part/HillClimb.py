@@ -1,5 +1,5 @@
 from UrbanParser import *
-from typing import Type, Sequence
+from typing import Type, Sequence, Tuple
 from copy import deepcopy
 import random
 
@@ -7,6 +7,7 @@ class HillClimb(object):
     def __init__(self, board: 'Board'):
         self.original_state = board
         self.current_state = deepcopy(board)
+        self.init_board()
     
     def __str__(self):
         return self.current_state.__str__()
@@ -68,12 +69,31 @@ class HillClimb(object):
                 if (c.typename == "Industrial" or c.typename == "Commercial" or\
                     c.typename == "Resident"):
                     yield c
+    
+    def climb(self, restarts: int =0) -> Tuple[Board, int]:
+        best_board, best_score = self.next_state()
+        for i in range(restarts):
+            print("Climb : ", i)
+            # reset to original state
+            self.current_state = deepcopy(self.original_state)
+            self.init_board()
+            new_state, new_score = self.next_state()
+            if (new_score > best_score):
+                print("New High Score: ", new_score)
+                best_board = deepcopy(new_state)
+                best_score = new_score
+            else:
+                print("Not a new high score", new_score)
+            print("End Climb : ", i, "\n\n")
+        # Update state because it will have been modified by next_state
+        self.current_state = deepcopy(best_board)
+        return (best_board, best_score)
 
-    def next_state(self) -> Board:
+    def next_state(self) -> Tuple[Board, int]:
         """ next_states: get the sequence of possible next states by moving one peice
         """
         # for each building, calculate all next moves
-        moveable_tiles = self.get_moveable()
+        moveable_tiles = list(self.get_moveable())
         # create a new board for each 
         best_board = self.current_state
         best_score = self.current_state.score()
@@ -91,22 +111,24 @@ class HillClimb(object):
         if(best_score != old_score):
             self.current_state = best_board
             print("CLIMBING!! from ", self.current_state.score())
-            self.next_state()
+            best_board, best_score = self.next_state()
 
-        return best_board
+        return best_board, best_score
 
 def main():
     print ("hello world")
     board : Board = Board.read_from_file("biggerSampleInput.txt")
-    print(board)
+    # print(board)
 
     alg : HillClimb = HillClimb(board)
-    alg.init_board()
 
-    print(alg)
+    # print(alg)
 
-    alg.next_state()
-    print(alg)
+    board, score = alg.climb(2)
+    print("Final of ", score)
+    print("Checking score: ", board.score())
+    print("board\n", board)
+
     ## algorithm
 
 if __name__ == "__main__":
