@@ -44,7 +44,7 @@ class Board(object):
             for line in infile:
                 c = 0
                 cur_row = []
-                for letter in line.strip().split(" "):
+                for letter in line.strip().split(","):
                     cur_row.append(Tile.tile_from_str(letter, r, c))
                     c += 1
                 tiles.append(cur_row)
