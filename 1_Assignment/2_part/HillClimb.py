@@ -117,7 +117,7 @@ class HillClimb(object):
 
 def main():
     print ("hello world")
-    board : Board = Board.read_from_file("biggerSampleInput.txt")
+    board : Board = Board.read_from_file("sample2.txt")
     # print(board)
 
     alg : HillClimb = HillClimb(board)

@@ -18,7 +18,7 @@ def main():
     #for arg in sys.argv[1:]:
         #TODO actually take input file arument
 
-    main_board = Board.read_from_file("./biggerSampleInput.txt")
+    main_board = Board.read_from_file("./sample2.txt")
     #start timing
     time_end = time.time() + runtime_seconds
     pop = Population(max_population, elite_count, cull_count, mutation_probability, 0, main_board, [], [], time.time())
