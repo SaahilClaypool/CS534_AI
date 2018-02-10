@@ -43,8 +43,10 @@ def main():
     update_generations(pop, time_end)
     #return the best individual after generation updating is completed
     best_ind = pop.select_best_individual()
-    print("Generation: ", pop.gen_number)
-    print("Time achieved: ", pop.top_achieved_time)
+    print("")
+    print("Best Score: ", decode_board(best_ind.characteristic, main_board).score())
+    print("Time Best Score achieved: ", pop.top_achieved_time)
+    print("Final Generation: ", pop.gen_number)
     print(best_ind)
     print("Best board: "+str(decode_board(best_ind.characteristic, main_board)))
 
