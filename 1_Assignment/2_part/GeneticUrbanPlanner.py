@@ -13,12 +13,26 @@ def main():
     elite_count = 15
     cull_count = 20
     mutation_probability = 0.1
-    runtime_seconds = 10.0
 
-    #for arg in sys.argv[1:]:
-        #TODO actually take input file arument
+    if len(sys.argv) < 3:
+        print("Error: not enough arguments. Please make sure to include the input map and number of seconds to run.")
+        return
+    filename = sys.argv[1]
+    runtime_seconds = float(sys.argv[2])
+    if len(sys.argv) > 3:
+        if len(sys.argv) != 8:
+            print("Error: incorrect number of arguments.")
+            print("Run the genetic algorithm program with the following inputs:")
+            print("Filename, Runtime, MaxPopulation, EliteCount, CullCount, MutaitonProbability")
+        max_population = sys.argv[4]
+        elite_count = sys.argv[5]
+        cull_count = sys.argv[6]
+        mutation_probability = sys.argv[7]
 
-    main_board = Board.read_from_file("./biggerSampleInput.txt")
+    main_board = Board.read_from_file(filename)
+    print("Starting Genetic Algorithm urban planner.")
+    print("Running on file: ",filename)
+    print("Running for time: ",runtime_seconds)
     #start timing
     time_end = time.time() + runtime_seconds
     pop = Population(max_population, elite_count, cull_count, mutation_probability, 0, main_board, [], [], time.time())
