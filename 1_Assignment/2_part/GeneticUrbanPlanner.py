@@ -20,14 +20,15 @@ def main():
     filename = sys.argv[1]
     runtime_seconds = float(sys.argv[2])
     if len(sys.argv) > 3:
-        if len(sys.argv) != 8:
+        if len(sys.argv) != 7:
             print("Error: incorrect number of arguments.")
             print("Run the genetic algorithm program with the following inputs:")
             print("Filename, Runtime, MaxPopulation, EliteCount, CullCount, MutaitonProbability")
-        max_population = sys.argv[4]
-        elite_count = sys.argv[5]
-        cull_count = sys.argv[6]
-        mutation_probability = sys.argv[7]
+            quit()
+        max_population =int(sys.argv[3])
+        elite_count = int(sys.argv[4])
+        cull_count = int(sys.argv[5])
+        mutation_probability = float(sys.argv[6])
 
     main_board = Board.read_from_file(filename)
     print("Starting Genetic Algorithm urban planner.")
@@ -181,32 +182,20 @@ class Population():
         self.next_generation.extend(self.current_generation[0:self.elite_count-1])
 
     def select_pair_and_reproduce(self):
-        #use fitness proportionate selection
-        r1 = random.uniform(0, 1) * self.sum_score
-        i1 = None
-        for i in self.current_generation:
-            r1 -= i.score
-            if r1 < 0:
-                i1 = i
-                break
-        if i1 is None:
-            i1 = self.current_generation[0]
-        r2 = random.uniform(0, 1) * self.sum_score
-        i2 = None
-        for i in self.current_generation:
-            r2 -= i.score
-            if r2 < 0:
-                #if selected individual is same as i1, choose the previous one
-                if i != i1:
-                    i2 = i
-                    break
-                else:
-                    id2 = self.current_generation.index(i)
-                    if id2 != 0:
-                        i2 = self.current_generation[id2-1]
-                    else:
-                        i2 = self.current_generation[id2+1]
-        self.cross_individuals(i1, i2)
+        i1 = len(self.current_generation)-1
+        i2 = len(self.current_generation)-1
+        #5 way tournament selection
+        for i in range(5):
+            j = random.randrange(0, len(self.current_generation)-1)
+            if j < i1:
+                i1 = j
+        for i in range(5):
+            j = random.randrange(0, len(self.current_generation) - 1)
+            if j < i2:
+                i2 = j
+        if i1 == i2:
+            i2 += 1
+        self.cross_individuals(self.current_generation[i1], self.current_generation[i2])
 
     def cross_individuals(self, p1: 'Individual', p2: 'Individual'):
         p1_c = p1.characteristic
