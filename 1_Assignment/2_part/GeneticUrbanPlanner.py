@@ -13,12 +13,27 @@ def main():
     elite_count = 15
     cull_count = 20
     mutation_probability = 0.1
-    runtime_seconds = 10.0
 
-    #for arg in sys.argv[1:]:
-        #TODO actually take input file arument
+    if len(sys.argv) < 3:
+        print("Error: not enough arguments. Please make sure to include the input map and number of seconds to run.")
+        return
+    filename = sys.argv[1]
+    runtime_seconds = float(sys.argv[2])
+    if len(sys.argv) > 3:
+        if len(sys.argv) != 7:
+            print("Error: incorrect number of arguments.")
+            print("Run the genetic algorithm program with the following inputs:")
+            print("Filename, Runtime, MaxPopulation, EliteCount, CullCount, MutaitonProbability")
+            quit()
+        max_population =int(sys.argv[3])
+        elite_count = int(sys.argv[4])
+        cull_count = int(sys.argv[5])
+        mutation_probability = float(sys.argv[6])
 
-    main_board = Board.read_from_file("./biggerSampleInput.txt")
+    main_board = Board.read_from_file(filename)
+    print("Starting Genetic Algorithm urban planner.")
+    print("Running on file: ",filename)
+    print("Running for time: ",runtime_seconds)
     #start timing
     time_end = time.time() + runtime_seconds
     pop = Population(max_population, elite_count, cull_count, mutation_probability, 0, main_board, [], [], time.time())
@@ -29,8 +44,10 @@ def main():
     update_generations(pop, time_end)
     #return the best individual after generation updating is completed
     best_ind = pop.select_best_individual()
-    print("Generation: ", pop.gen_number)
-    print("Time achieved: ", pop.top_achieved_time)
+    print("")
+    print("Best Score: ", decode_board(best_ind.characteristic, main_board).score())
+    print("Time Best Score achieved: ", pop.top_achieved_time)
+    print("Final Generation: ", pop.gen_number)
     print(best_ind)
     print("Best board: "+str(decode_board(best_ind.characteristic, main_board)))
 
@@ -165,32 +182,20 @@ class Population():
         self.next_generation.extend(self.current_generation[0:self.elite_count-1])
 
     def select_pair_and_reproduce(self):
-        #use fitness proportionate selection
-        r1 = random.uniform(0, 1) * self.sum_score
-        i1 = None
-        for i in self.current_generation:
-            r1 -= i.score
-            if r1 < 0:
-                i1 = i
-                break
-        if i1 is None:
-            i1 = self.current_generation[0]
-        r2 = random.uniform(0, 1) * self.sum_score
-        i2 = None
-        for i in self.current_generation:
-            r2 -= i.score
-            if r2 < 0:
-                #if selected individual is same as i1, choose the previous one
-                if i != i1:
-                    i2 = i
-                    break
-                else:
-                    id2 = self.current_generation.index(i)
-                    if id2 != 0:
-                        i2 = self.current_generation[id2-1]
-                    else:
-                        i2 = self.current_generation[id2+1]
-        self.cross_individuals(i1, i2)
+        i1 = len(self.current_generation)-1
+        i2 = len(self.current_generation)-1
+        #5 way tournament selection
+        for i in range(5):
+            j = random.randrange(0, len(self.current_generation)-1)
+            if j < i1:
+                i1 = j
+        for i in range(5):
+            j = random.randrange(0, len(self.current_generation) - 1)
+            if j < i2:
+                i2 = j
+        if i1 == i2:
+            i2 += 1
+        self.cross_individuals(self.current_generation[i1], self.current_generation[i2])
 
     def cross_individuals(self, p1: 'Individual', p2: 'Individual'):
         p1_c = p1.characteristic

@@ -2,6 +2,8 @@ from UrbanParser import *
 from typing import Type, Sequence, Tuple
 from copy import deepcopy
 import random
+import time
+import sys
 
 class HillClimb(object):
     def __init__(self, board: 'Board'):
@@ -69,7 +71,24 @@ class HillClimb(object):
                 if (c.typename == "Industrial" or c.typename == "Commercial" or\
                     c.typename == "Resident"):
                     yield c
-    
+    def climb_for(self, seconds:int = 0):
+        start = time.time()
+        best_board, best_score = self.next_state()
+        i = 0
+        while(time.time() - start < seconds):
+            #print("Climb : ", i)
+            i += 1
+            new_state, new_score = self.next_state()
+            if (new_score > best_score):
+                print("New High Score: ", new_score)
+                best_board = deepcopy(new_state)
+                best_score = new_score
+            self.current_state = deepcopy(self.original_state)
+            self.init_board()
+        
+        self.current_state = deepcopy(best_board)
+        return (best_board, best_score)
+
     def climb(self, restarts: int =0) -> Tuple[Board, int]:
         best_board, best_score = self.next_state()
         for i in range(restarts):
@@ -110,21 +129,27 @@ class HillClimb(object):
         old_score = self.current_state.score()
         if(best_score != old_score):
             self.current_state = best_board
-            print("CLIMBING!! from ", self.current_state.score())
+            #print("CLIMBING!! from ", self.current_state.score())
             best_board, best_score = self.next_state()
 
         return best_board, best_score
 
 def main():
-    print ("hello world")
-    board : Board = Board.read_from_file("biggerSampleInput.txt")
-    # print(board)
+
+    if len(sys.argv) < 3:
+        print("Error: not enough arguments. Please make sure to include the input map and number of seconds to run.")
+        return
+    filename = sys.argv[1]
+    runtime_seconds = float(sys.argv[2])
+
+    board = Board.read_from_file(filename)
+    print("Starting Hillclimb Algorithm urban planner.")
+    print("Running on file: ",filename)
+    print("Running for time: ",runtime_seconds)
 
     alg : HillClimb = HillClimb(board)
 
-    # print(alg)
-
-    board, score = alg.climb(2)
+    board, score = alg.climb_for(runtime_seconds)
     print("Final of ", score)
     print("Checking score: ", board.score())
     print("board\n", board)
