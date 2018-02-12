@@ -75,7 +75,7 @@ class Move:
         self.heuristic_cost = self.total_cost + self.board.heuristic
 
     def __str__(self):
-        return str(self.board) + '\nCost: ' + str(self.total_cost) + ' - Heuristic Cost: ' + str(self.heuristic_cost)
+        return str(self.board) + '\nCost: ' + str(self.total_cost) + ' - Heuristic Cost: ' + str(self.heuristic_cost) + '\n'
 
     def __lt__(self, other):
         if hasattr(other, 'heuristic_cost'):
@@ -114,23 +114,25 @@ def A_star(board: Board):
             holder = moves[0]
             del moves[0]
             moves.sort()
-            # for i in range(5):
-            #     print(moves[i])
-            # input()
-            # print('\n\n\n\n##################################')
 
         nodes_traversed = 0
         node = moves[0]
-        print('\n\n\n\n##################################')
+        print('\n##################################')
+        print('Steps (in reverse order):')
+        print('##################################\n')
         while node != None:
             print(node)
             node = node.parent
             nodes_traversed += 1
-        print('\n\n\n\n##################################')
+        print('\n##################################')
+        print('Results:')
+        print('##################################\n')
         print(moves[0])
         print('It took ' + str(nodes_traversed) + ' moves')
     else:
-        print('\n\n\n\n##################################')
+        print('\n##################################')
+        print('Results:')
+        print('##################################\n')
         print('The board is requires no modification')
         print(board)
 
@@ -143,12 +145,11 @@ args = parser.parse_args()
 
 board = Board(args.N)
 board.generate()
+print('\n##################################')
+print('Initial Board Configuration:')
+print('##################################\n')
 print(board)
 print(board.heuristic)
-# moves = board.generate_moves()
-# moves.sort()
-# for i in range(len(moves)):
-#     print(moves[i])
 
 if args.algorithm == 1:
     A_star(board)
