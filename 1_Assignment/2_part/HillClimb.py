@@ -73,12 +73,12 @@ class HillClimb(object):
                     yield c
     def climb_for(self, seconds:int = 0):
         start = time.time()
-        best_board, best_score = self.next_state()
+        best_board, best_score = self.next_state(start, seconds)
         i = 0
         while(time.time() - start < seconds):
-            #print("Climb : ", i)
+            print("Climb : ", i)
             i += 1
-            new_state, new_score = self.next_state()
+            new_state, new_score = self.next_state(start, seconds)
             if (new_score > best_score):
                 print("New High Score: ", new_score)
                 best_board = deepcopy(new_state)
@@ -108,7 +108,7 @@ class HillClimb(object):
         self.current_state = deepcopy(best_board)
         return (best_board, best_score)
 
-    def next_state(self) -> Tuple[Board, int]:
+    def next_state(self, start, seconds) -> Tuple[Board, int]:
         """ next_states: get the sequence of possible next states by moving one peice
         """
         # for each building, calculate all next moves
@@ -117,20 +117,26 @@ class HillClimb(object):
         best_board = self.current_state
         best_score = self.current_state.score()
         for tile in moveable_tiles:
-            possible_moves = self.possible_moves()
-            for move in possible_moves:
-                new_board = deepcopy(self.current_state)
-                self.move(new_board, tile, move.r, move.c)
-                new_score = new_board.score()
-                if(new_score > best_score):
-                    best_score = new_score
-                    best_board = new_board
+            if (time.time() - start < seconds):
+                possible_moves = self.possible_moves()
+                for move in possible_moves:
+                    if (time.time() - start < seconds):
+                        new_board = deepcopy(self.current_state)
+                        self.move(new_board, tile, move.r, move.c)
+                        new_score = new_board.score()
+                        if(new_score > best_score):
+                            best_score = new_score
+                            best_board = new_board
+                    else:
+                        break
+            else:
+                break
         
         old_score = self.current_state.score()
         if(best_score != old_score):
             self.current_state = best_board
-            #print("CLIMBING!! from ", self.current_state.score())
-            best_board, best_score = self.next_state()
+            print("CLIMBING!! from ", self.current_state.score())
+            best_board, best_score = self.next_state(start, seconds)
 
         return best_board, best_score
 
@@ -140,11 +146,12 @@ def main():
         print("Error: not enough arguments. Please make sure to include the input map and number of seconds to run.")
         return
     filename = sys.argv[1]
+
+    print("Starting Hillclimb Algorithm urban planner.")
+    print("Running on file: ", filename)
     runtime_seconds = float(sys.argv[2])
 
     board = Board.read_from_file(filename)
-    print("Starting Hillclimb Algorithm urban planner.")
-    print("Running on file: ",filename)
     print("Running for time: ",runtime_seconds)
 
     alg : HillClimb = HillClimb(board)
