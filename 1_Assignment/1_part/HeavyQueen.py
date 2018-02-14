@@ -1,4 +1,4 @@
-import argparse, random
+import argparse, random, time, sys
 
 class Board:
     def __init__(self, size: int, board = []):
@@ -19,6 +19,12 @@ class Board:
             board_string += '\n'
 
         return board_string
+
+    def __eq__(self, other):
+        if hasattr(other, 'board'):
+            return self.board == other.board
+        else:
+            return False
 
     def generate(self):
         self.board = []
@@ -75,7 +81,7 @@ class Move:
         self.heuristic_cost = self.total_cost + self.board.heuristic
 
     def __str__(self):
-        return str(self.board) + '\nCost: ' + str(self.total_cost) + ' - Heuristic Cost: ' + str(self.heuristic_cost) + '\n'
+        return '\n' + str(self.board) + '\nCost: ' + str(self.heuristic_cost)
 
     def __lt__(self, other):
         if hasattr(other, 'heuristic_cost'):
@@ -107,35 +113,87 @@ class Move:
 
 
 def A_star(board: Board):
+    start_time = time.time()
     if board.heuristic != 0:
         moves = board.generate_moves(Move(board, 0))
+        moves.sort()
+        nodes_expanded = 1
         while moves[0].board.heuristic > 0:
             moves = moves + moves[0].board.generate_moves(moves[0])
-            holder = moves[0]
             del moves[0]
             moves.sort()
+            nodes_expanded += 1
 
         nodes_traversed = 0
         node = moves[0]
         print('\n##################################')
         print('Steps (in reverse order):')
-        print('##################################\n')
+        print('##################################')
         while node != None:
             print(node)
             node = node.parent
             nodes_traversed += 1
         print('\n##################################')
         print('Results:')
-        print('##################################\n')
+        print('##################################')
         print(moves[0])
-        print('It took ' + str(nodes_traversed) + ' moves')
+        print('Moves: ' + str(nodes_traversed))
+        print('Nodes Expanded: ' + str(nodes_expanded))
+        print('Time Taken: ' + str(time.time() - start_time) + ' secs')
     else:
         print('\n##################################')
         print('Results:')
         print('##################################\n')
-        print('The board is requires no modification')
+        print('The board requires no modification')
         print(board)
 
+def hill_climbing(board):
+    start_time = time.time()
+    if board.heuristic != 0:
+        best_iteration = None
+        for i in range(10):
+            if i > 0:
+                board.generate()
+            sequence = [Move(board, 0)]
+            start = time.time()
+            while sequence[-1].board.heuristic > 0 and time.time() - start < 10:
+                moves = sequence[-1].board.generate_moves()
+                best_move = sequence[-1]
+                for j in range(len(moves)):
+                    if moves[j].heuristic_cost < best_move.heuristic_cost:
+                        best_move = moves[j]
+
+                if sequence[-1].board == best_move.board:
+                    break
+                sequence.append(best_move)
+            if (sequence[-1].board.heuristic == 0 and not best_iteration) or \
+            (sequence[-1].board.heuristic == 0 and len(sequence) < len(best_iteration)):
+                best_iteration = sequence
+        print(best_iteration)
+
+        if best_iteration and best_iteration[0].board.heuristic == 0:
+            print('\n##################################')
+            print('Steps:')
+            print('##################################')
+            for i in range(len(best_iteration)):
+                print(best_iteration[i])
+
+        print('\n##################################')
+        print('Results:')
+        print('##################################')
+        if best_iteration and best_iteration[0].board.heuristic == 0:
+            print(best_iteration[0])
+            print('Moves: ' + str(least_moves))
+        else:
+            print('No solution found')
+
+        print('Time Taken: ' + str(time.time() - start_time) + ' secs')
+    else:
+        print('\n##################################')
+        print('Results:')
+        print('##################################\n')
+        print('The board requires no modification')
+        print(board)
 
 
 parser = argparse.ArgumentParser(description='Simulates the Heavy Queens Problem.')
@@ -149,11 +207,10 @@ print('\n##################################')
 print('Initial Board Configuration:')
 print('##################################\n')
 print(board)
-print(board.heuristic)
 
 if args.algorithm == 1:
     A_star(board)
 elif args.algorithm == 0:
-    pass
+    hill_climbing(board)
 else:
     print('Error: algorithm argument must be a 1 or a 0!')
