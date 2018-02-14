@@ -56,10 +56,11 @@ class Board:
         if (cnt == 0):
             return 0 
         else:
-            return 10 + cnt
+            return 10 + cnt 
     
     def cost(self) -> int: 
-        return self.prev_cost + self.calculate_heuristic()
+        # return self.prev_cost + self.calculate_heuristic()
+        return self.calculate_heuristic()
     
     def calc_next(self) -> Sequence['Board']:
         moves = []
@@ -90,21 +91,20 @@ class Board:
             random.shuffle(next_moves)
             next_moves.append(prev_best)
             for m in next_moves: 
-                if(m.cost() < cur_best_score):
+                if(m.cost() < cur_best_score or\
+                    m.cost() == cur_best_score and m.prev_cost < cur_best.prev_cost):
                     cur_best_score = m.cost()
                     cur_best = m
                     cur_chain.append(cur_best)
-                if (m.cost() < best_score):
+
+                if (m.cost() < best_score or\
+                    m.cost() == best_score and m.prev_cost < best.prev_cost):
                     best_score = m.cost()
                     best = m
                     best_chain = cur_chain
             
             if (cur_best == prev_best):
                 cur_best = Board(self.board, 0, True)
-                cost_from_orig = 0
-                for r in range(self.size):
-                    cost_from_orig += 10 + (self.board[r] - cur_best.board[r]) ** 2
-                cur_best.prev_cost = cost_from_orig
                 cur_best_score = cur_best.cost()
                 cur_chain = []
 
@@ -115,7 +115,7 @@ class Board:
 
 
 def main():
-    b = Board([i for i in range(16)], 0, True)
+    b = Board([i for i in range(10)], 0, True)
     print(b)
     best, chain, t = b.climb()
 
