@@ -116,16 +116,32 @@ def A_star(board: Board):
     start_time = time.time()
     if board.heuristic != 0:
         moves = board.generate_moves(Move(board, 0))
-        moves.sort()
+        # moves.sort()
         nodes_expanded = 1
-        while moves[0].board.heuristic > 0:
-            moves = moves + moves[0].board.generate_moves(moves[0])
-            del moves[0]
-            moves.sort()
+        best_move = moves[0]
+        best_index = 0
+        current_best = sys.maxsize
+        for j in range(len(moves)):
+            if moves[j].heuristic_cost < current_best:
+                current_best = moves[j].heuristic_cost
+                best_move = moves[j]
+                best_index = j
+
+        while best_move.board.heuristic > 0:
+            moves = moves + best_move.board.generate_moves(best_move)
+            # del moves[0]
+            # moves.sort()
             nodes_expanded += 1
+            del moves[best_index]
+            current_best = sys.maxsize
+            for j in range(len(moves)):
+                if moves[j].heuristic_cost < current_best:
+                    current_best = moves[j].heuristic_cost
+                    best_move = moves[j]
+                    best_index = j
 
         nodes_traversed = 0
-        node = moves[0]
+        node = best_move
         print('\n##################################')
         print('Steps (in reverse order):')
         print('##################################')
@@ -136,7 +152,7 @@ def A_star(board: Board):
         print('\n##################################')
         print('Results:')
         print('##################################')
-        print(moves[0])
+        print(best_move)
         print('Moves: ' + str(nodes_traversed))
         print('Nodes Expanded: ' + str(nodes_expanded))
         print('Time Taken: ' + str(time.time() - start_time) + ' secs')
