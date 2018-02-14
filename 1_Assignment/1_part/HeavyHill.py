@@ -3,9 +3,10 @@ from queue import PriorityQueue
 import time
 from typing import Sequence, Mapping
 from copy import deepcopy
+import argparse
 class Board:
     """
-    array of 
+    array of
     """
     def __init__(self, board: [], prev_cost: int, added_cost = 0, rand=False):
         self.size = len(board)
@@ -15,9 +16,9 @@ class Board:
             self.board = Board.generate(self.size)
         else:
             self.board = list(board)
-    
+
     def __str__(self):
-        st = "[" +  ", ".join(map(str, self.board)) + "]" 
+        st = "[" +  ", ".join(map(str, self.board)) + "]"
         st += "\n"
         st += "cost to move: " + str(self.prev_cost)
         st += "\n"
@@ -26,24 +27,24 @@ class Board:
         return st
     def __repr__(self):
         return self.__str__()
-    
+
     def __eq__(self, value):
         return self.board == value.board
-    
+
     def __hash__(self):
         tens = 1
         s = 0
-        for i in self.board: 
+        for i in self.board:
             s += 0 * tens
             tens *= 10
         return s
-    
+
     def __ne__(self, other):
         return not(self == other)
-    
+
     def __lt__(self, other):
         return self.cost() < other.cost()
-    
+
     @staticmethod
     def generate(size: int):
         """
@@ -65,7 +66,7 @@ class Board:
                     cnt += 1
                 elif (abs(self.board[c1] - self.board[c2]) == abs(c1 - c2)) : #if difference in column = difference in rows then on diag
                     cnt += 1
-        
+
         if (cnt == 0):
             return 0
         else:
@@ -73,14 +74,14 @@ class Board:
     def calculate_heuristic(self):
         cnt = self.attacking_pairs()
         if (cnt == 0):
-            return 0 
+            return 0
         else:
-            return 10 + cnt 
-    
-    def cost(self) -> int: 
+            return 10 + cnt
+
+    def cost(self) -> int:
         return self.prev_cost + self.calculate_heuristic()
         # return self.calculate_heuristic()
-    
+
     def calc_next(self) -> Sequence['Board']:
         moves = []
         for c in range(self.size):
@@ -91,9 +92,9 @@ class Board:
                 new_board_ar[c] = r
                 added_cost = (self.board[c] - r) ** 2 + 10
                 moves.append(Board(new_board_ar, added_cost + self.prev_cost, added_cost))
-        
+
         return moves
-    
+
     def a_star(self):
         explored = [] # already explored
         todo : PriorityQueue = PriorityQueue()
@@ -109,31 +110,31 @@ class Board:
             cur = todo.get()
             if (cur.calculate_heuristic() == 0):
                 return cur
-            
+
             explored.append(cur)
             print("cur cost: {}".format(cur.calculate_heuristic()))
             neighbors = cur.calc_next()
             for n in neighbors:
                 if (n in explored):
                     continue
-                
+
                 if (n not in todo.queue):
                     todo.put(n)
-                
+
                 cost_there = prevcost[cur] + n.added_cost
 
                 if (n in prevcost.keys() and \
                     cost_there >= prevcost[n]):
                     continue
-                
+
                 camefrom[n] = cur
                 prevcost[n] = cost_there
                 hcost[n] = prevcost[n] + n.calculate_heuristic()
 
 
 
-        
-    def climb(self): 
+
+    def climb(self):
         start_time = time.time()
         best = self
         best_score = self.calculate_heuristic()
@@ -148,7 +149,7 @@ class Board:
             next_moves = best.calc_next()
             random.shuffle(next_moves)
             next_moves.append(prev_best)
-            for m in next_moves: 
+            for m in next_moves:
                 if(m.calculate_heuristic() < cur_best_score or\
                     m.calculate_heuristic() == cur_best_score and m.prev_cost < cur_best.prev_cost):
                     cur_best_score = m.calculate_heuristic()
@@ -160,16 +161,16 @@ class Board:
                     best_score = m.calculate_heuristic()
                     best = m
                     best_chain = cur_chain
-            
+
             if (cur_best == prev_best):
                 cur_best = Board(self.board, 0, 0, True)
                 cur_best_score = cur_best.calculate_heuristic()
                 cur_chain = []
 
-                
-        
+
+
         return best, best_chain, time.time() - start_time
-                
+
 
 
 def climb(b: Board):
@@ -179,7 +180,7 @@ def climb(b: Board):
     print("Best Board: ")
     print(best)
     print("Chain: ")
-    for i in chain: 
+    for i in chain:
         print("-----------------\n")
         print(i)
         print("-----------------\n")
@@ -192,8 +193,16 @@ def astar(b):
 
 
 def main():
-    b = Board([i for i in range(6)], 0, 0, True)
-    # climb(b)
-    astar(b)
+    parser = argparse.ArgumentParser(description='Simulates the Heavy Queens Problem.')
+    parser.add_argument('N', help='The number of Queens', type=int)
+    parser.add_argument('algorithm', help='Which algorithm to use: 1 - A*, 2 - Hill Climb', type=int)
+    args = parser.parse_args()
+    b = Board([i for i in range(args.N)], 0, 0, True)
+    if args.algorithm == 1:
+        astar(b)
+    elif args.algorithm == 0:
+        climb(b)
+    else:
+        print('Error: algorithm argument must be a 1 or a 0!')
 if __name__ == "__main__":
     main()
