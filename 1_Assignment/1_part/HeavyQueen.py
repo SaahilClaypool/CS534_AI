@@ -175,13 +175,16 @@ def hill_climbing(board):
             while sequence[-1].board.heuristic > 0 and time.time() - start < 10:
                 moves = sequence[-1].board.generate_moves()
                 best_move = sequence[-1]
+                current_best = sys.maxsize
                 for j in range(len(moves)):
-                    if moves[j].heuristic_cost < best_move.heuristic_cost:
+                    if moves[j].heuristic_cost < current_best:
+                        current_best = moves[j].heuristic_cost
                         best_move = moves[j]
 
                 if sequence[-1].board == best_move.board:
                     break
                 sequence.append(best_move)
+                print(best_move)
             if (sequence[-1].board.heuristic == 0 and not best_iteration) or \
             (sequence[-1].board.heuristic == 0 and len(sequence) < len(best_iteration)):
                 best_iteration = sequence
