@@ -222,6 +222,8 @@ args = parser.parse_args()
 
 board = Board(args.N)
 board.generate()
+# board.board = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+# board.size = len([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
 print('\n##################################')
 print('Initial Board Configuration:')
 print('##################################\n')
