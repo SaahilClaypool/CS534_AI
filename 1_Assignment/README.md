@@ -7,6 +7,9 @@ Authors:
 
 https://docs.google.com/document/d/1bndQf-ySCUv1R2x8La5auF2iPS_mbqfMGvmfEbAAGsI/edit
 
+Writeup:
+https://docs.google.com/document/d/1quOORXXEwJMkznCSqbIppvPW8D_YsTYuZqWHLj_RMw0/edit
+
 ## Organization
 
 The project is split into two subfolders for part 1 and part 2.
