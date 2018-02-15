@@ -113,7 +113,7 @@ class Board:
             # cur = heapq.heappop(todo)
             cur = todo.get()
             if (cur.calculate_heuristic() == 0):
-                return cur, camefrom, len(explored)
+                return cur, camefrom, len(explored) 
 
             explored.append(cur)
             neighbors = cur.calc_next()
@@ -147,8 +147,10 @@ class Board:
         cur_best_score = best.calculate_heuristic()
         cur_chain = [cur_best]
 
+        checked = 0
         while(time.time() - start_time < 10 and\
                 not cur_best.calculate_heuristic() == 0):
+            checked += 1
             prev_best = cur_best
             next_moves = best.calc_next()
             random.shuffle(next_moves)
@@ -173,22 +175,24 @@ class Board:
 
 
 
-        return best, best_chain, time.time() - start_time
+        return best, best_chain, time.time() - start_time, checked
 
 
 
 def climb(b: Board):
     print(b)
-    best, chain, t = b.climb()
+    best, chain, t, checked = b.climb()
 
     print("Best Board: ")
     print(best)
     print("Chain: ")
+    step = 0
     for i in chain:
-        print("-----------------\n")
+        step += 1
+        print(step, "-----------------\n")
         print(i)
-        print("-----------------\n")
     print("Completed in : ", t, "seconds")
+    print("Checked {} nodes".format(checked))
 
 def astar(b):
     print(b)
