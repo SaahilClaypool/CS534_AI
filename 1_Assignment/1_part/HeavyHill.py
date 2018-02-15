@@ -1,4 +1,5 @@
 import random
+import heapq
 from queue import PriorityQueue
 import time
 from typing import Sequence, Mapping
@@ -20,7 +21,9 @@ class Board:
     def __str__(self):
         st = "[" +  ", ".join(map(str, self.board)) + "]"
         st += "\n"
-        st += "cost to move: " + str(self.prev_cost)
+        st += "moved peice cost: " + str(self.prev_cost)
+        st += "\n"
+        st += "total cost: " + str(self.cost())
         st += "\n"
         st += "number of attacking queens: " + str(self.attacking_pairs())
         st += "\n"
@@ -106,13 +109,13 @@ class Board:
         prevcost[self] = 0 # start with zero
         hcost[self] = self.calculate_heuristic()
 
-        while (not todo.empty()):
+        while (todo):
+            # cur = heapq.heappop(todo)
             cur = todo.get()
             if (cur.calculate_heuristic() == 0):
-                return cur
+                return cur, camefrom, len(explored)
 
             explored.append(cur)
-            print("cur cost: {}".format(cur.calculate_heuristic()))
             neighbors = cur.calc_next()
             for n in neighbors:
                 if (n in explored):
@@ -188,8 +191,25 @@ def climb(b: Board):
 
 def astar(b):
     print(b)
-    best = b.a_star()
-    print(best)
+    s = time.time()
+    best, camefrom, expanded = b.a_star()
+    print("Steps in reverse:")
+    print("-------------\n")
+    cur = best
+    steps = []
+    while(cur in camefrom.keys()):
+        steps.append(cur)
+        cur = camefrom[cur]
+    i = 0
+    steps.append(b)
+    steps.reverse()
+    for step in steps:
+        print("step {}: {}".format(i, step))
+        i += 1
+    
+    print("Finished in {}".format(time.time() - s))
+    print("Expanded {} nodes".format(expanded))
+
 
 
 def main():
