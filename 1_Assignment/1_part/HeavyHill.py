@@ -113,7 +113,7 @@ class Board:
             # cur = heapq.heappop(todo)
             cur = todo.get()
             if (cur.calculate_heuristic() == 0):
-                return cur, camefrom, len(explored) 
+                return cur, camefrom, len(explored)
 
             explored.append(cur)
             neighbors = cur.calc_next()
@@ -193,6 +193,7 @@ def climb(b: Board):
         print(i)
     print("Completed in : ", t, "seconds")
     print("Checked {} nodes".format(checked))
+    print("Effective branching factor: " + str(checked ** (1 / step)))
 
 def astar(b):
     print(b)
@@ -211,9 +212,10 @@ def astar(b):
     for step in steps:
         print("step {}: {}".format(i, step))
         i += 1
-    
+
     print("Finished in {}".format(time.time() - s))
     print("Expanded {} nodes".format(expanded))
+    print("Effective branching factor: " + str(expanded ** (1 / len(steps))))
 
 
 
