@@ -147,7 +147,8 @@ class Board:
         cur_best_score = best.calculate_heuristic()
         cur_chain = [cur_best]
 
-        while(time.time() - start_time < 10):
+        while(time.time() - start_time < 10 and\
+                not cur_best.calculate_heuristic() == 0):
             prev_best = cur_best
             next_moves = best.calc_next()
             random.shuffle(next_moves)
