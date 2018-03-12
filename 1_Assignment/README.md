@@ -1,13 +1,13 @@
 # Assignment 1
 
-Authors: 
+Authors:
 - Sola Shirai
 - Myles Spencer
 - Saahil Claypool
 
 https://docs.google.com/document/d/1bndQf-ySCUv1R2x8La5auF2iPS_mbqfMGvmfEbAAGsI/edit
 
-Writeup:
+Writeup/Analysis:
 https://docs.google.com/document/d/1quOORXXEwJMkznCSqbIppvPW8D_YsTYuZqWHLj_RMw0/edit
 
 ## Organization
@@ -16,18 +16,31 @@ The project is split into two subfolders for part 1 and part 2.
 
 ## Part 1
 
-TODO
+The code is all in the file HeavyHill.py
+
+### Running:
+```sh
+cd 1_part
+
+## Run Heavy Queens
+## Requires python 3.6
+## Mode: 0 - Hill Climb, 1 - A*
+## python HeavyHill.py <number_of_queens> <mode>
+python HeavyHill.py 4 0
+
+python HeavyHill.py 4 1
+```
 
 ## Part 2
 
-The code is split between three files, UrbanParser.py, 
-HillClimb.py, and GeneticUrbanPlanner.py. 
+The code is split between three files, UrbanParser.py,
+HillClimb.py, and GeneticUrbanPlanner.py.
 
-The UrbanParser contains the shared code for parsing a textfile, printing, 
-and scoring a urban plan. The two other files contain the algorithm implementation. 
+The UrbanParser contains the shared code for parsing a textfile, printing,
+and scoring a urban plan. The two other files contain the algorithm implementation.
 
-### Running: 
-```sh 
+### Running:
+```sh
 cd 2_part
 
 ## Run Hill Climb
@@ -40,11 +53,11 @@ python HillClimb.py sample1.txt 10
 python GeneticUrbanPlanner.py sample1.txt 10
 ```
 
-### Output: 
+### Output:
 
-The program outputs look like the following: 
+The program outputs look like the following:
 
-```sh 
+```sh
 Starting Genetic Algorithm urban planner.
 Running on file:  .\sample1.txt
 Running for time:  5.0
@@ -64,7 +77,6 @@ Height: 3 Width: 4
 ```
 
 
-The board peices are slightly verbose, but contains the same information as a string board, just with actual names. 
+The board peices are slightly verbose, but contains the same information as a string board, just with actual names.
 The score for each peice is the cost to build over that location (-1 for locations that are toxic). The genetic
-alrogithm also prints the characteristic string, explained more in the writeup. 
-
+alrogithm also prints the characteristic string, explained more in the writeup.

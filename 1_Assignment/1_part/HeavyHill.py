@@ -1,4 +1,5 @@
 import random
+import heapq
 from queue import PriorityQueue
 import time
 from typing import Sequence, Mapping
@@ -20,7 +21,9 @@ class Board:
     def __str__(self):
         st = "[" +  ", ".join(map(str, self.board)) + "]"
         st += "\n"
-        st += "cost to move: " + str(self.prev_cost)
+        st += "moved peice cost: " + str(self.prev_cost)
+        st += "\n"
+        st += "total cost: " + str(self.cost())
         st += "\n"
         st += "number of attacking queens: " + str(self.attacking_pairs())
         st += "\n"
@@ -106,13 +109,13 @@ class Board:
         prevcost[self] = 0 # start with zero
         hcost[self] = self.calculate_heuristic()
 
-        while (not todo.empty()):
+        while (todo):
+            # cur = heapq.heappop(todo)
             cur = todo.get()
             if (cur.calculate_heuristic() == 0):
-                return cur
+                return cur, camefrom, len(explored)
 
             explored.append(cur)
-            print("cur cost: {}".format(cur.calculate_heuristic()))
             neighbors = cur.calc_next()
             for n in neighbors:
                 if (n in explored):
@@ -144,7 +147,10 @@ class Board:
         cur_best_score = best.calculate_heuristic()
         cur_chain = [cur_best]
 
-        while(time.time() - start_time < 10):
+        checked = 0
+        while(time.time() - start_time < 10 and\
+                not cur_best.calculate_heuristic() == 0):
+            checked += 1
             prev_best = cur_best
             next_moves = best.calc_next()
             random.shuffle(next_moves)
@@ -169,27 +175,48 @@ class Board:
 
 
 
-        return best, best_chain, time.time() - start_time
+        return best, best_chain, time.time() - start_time, checked
 
 
 
 def climb(b: Board):
     print(b)
-    best, chain, t = b.climb()
+    best, chain, t, checked = b.climb()
 
     print("Best Board: ")
     print(best)
     print("Chain: ")
+    step = 0
     for i in chain:
-        print("-----------------\n")
+        step += 1
+        print(step, "-----------------\n")
         print(i)
-        print("-----------------\n")
     print("Completed in : ", t, "seconds")
+    print("Checked {} nodes".format(checked))
+    print("Effective branching factor: " + str(checked ** (1 / step)))
 
 def astar(b):
     print(b)
-    best = b.a_star()
-    print(best)
+    s = time.time()
+    best, camefrom, expanded = b.a_star()
+    print("Steps in reverse:")
+    print("-------------\n")
+    cur = best
+    steps = []
+    while(cur in camefrom.keys()):
+        steps.append(cur)
+        cur = camefrom[cur]
+    i = 0
+    steps.append(b)
+    steps.reverse()
+    for step in steps:
+        print("step {}: {}".format(i, step))
+        i += 1
+
+    print("Finished in {}".format(time.time() - s))
+    print("Expanded {} nodes".format(expanded))
+    print("Effective branching factor: " + str(expanded ** (1 / len(steps))))
+
 
 
 def main():
