@@ -25,7 +25,13 @@ class GibbsNode:
 
     def update_node(self):
         #get values of parents
-        parent_values = tuple(map(lambda x: x.get_current_value, self.parents))
+        if not self.parents:
+            parent_values = ()
+        else:
+            p_vals = []
+            for p in self.parents:
+                p_vals.append(p.get_current_value())
+            parent_values = tuple(p_vals)
         #get the probability distribution for the current configuration
         probabilities = self.p_dict[parent_values]
         randv = random.random()
@@ -46,10 +52,10 @@ def main():
         (1, 0): [0.2, 0.4, 0.4],
         (1, 1): [0.5, 0.35, 0.15]
     }, [amenities, neighborhood])
-    children = GibbsNode(["bad", "good"], {(0) : [0.6, 0.4], (1) : [0.3, 0.7]}, [neighborhood])
+    children = GibbsNode(["bad", "good"], {(0,) : [0.6, 0.4], (1,) : [0.3, 0.7]}, [neighborhood])
     size = GibbsNode(["small", "medium", "large"], {(): [0.33, 0.34, 0.33]}, [])
-    schools = GibbsNode(["bad", "good"], {(0) : {0.7, 0.3}, (1) : {0.8, 0.2}}, [children])
-    age = GibbsNode(["old", "new"], {(0): [0.3, 0.7], (1) : {0.6, 0.4}, (2): {0.9, 0.1}}, [location])
+    schools = GibbsNode(["bad", "good"], {(0,) : {0.7, 0.3}, (1,) : {0.8, 0.2}}, [children])
+    age = GibbsNode(["old", "new"], {(0,): [0.3, 0.7], (1,) : {0.6, 0.4}, (2,): {0.9, 0.1}}, [location])
     price = GibbsNode(["cheap", "ok", "expensive"], {
         (0, 0, 0, 0) : [0.5, 0.4, 0.1],
         (0, 0, 0, 1) : [0.4, 0.45, 0.15],
