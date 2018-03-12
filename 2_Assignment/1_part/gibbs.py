@@ -15,12 +15,16 @@ class GibbsNode:
         self.value = 0 #initialize value as 0 by default
         self.max_value = len(self.value_names)-1
         self.is_fixed = False
+        self.children = [] #initialize children as empty, add afterwards
 
     def get_name(self) -> str:
         return self.name
 
     def set_fixed(self, f : bool):
         self.is_fixed = f
+
+    def set_children(self, children : Sequence['GibbsNode']):
+        self.children = children
 
     def get_string_value(self) -> str:
         return self.value_names[self.value]
@@ -32,6 +36,7 @@ class GibbsNode:
         self.value = random.randint(0, self.max_value)
 
     def update_node(self):
+        #TODO: This method is probably incomplete. not actually using info about child nodes
         if self.is_fixed:
             return
         #get values of parents
@@ -104,6 +109,13 @@ def main():
         (2, 1, 1, 1) : [0.41, 0.39, 0.2],
         (2, 1, 1, 2) : [0.37, 0.33, 0.3]
     }, [location, age, schools, size])
+    amenities.set_children([location])
+    neighborhood.set_children([location, children])
+    children.set_children([schools])
+    location.set_children([age, price])
+    size.set_children([price])
+    schools.set_children([price])
+    age.set_children([price])
     node_list = [amenities, location, age, schools, size, children, price, neighborhood]
 
 if __name__ == "__main__":
