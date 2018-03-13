@@ -35,8 +35,21 @@ class GibbsNode:
     def set_value_random(self):
         self.value = random.randint(0, self.max_value)
 
+    #given the parent has a certain value, what is the conditoinal probability?
+    #computing P(child | Parent)
+    def get_cond_prob_given_parent(self, p_node : 'GibbsNode', p_val : int) -> float:
+        p_vals = []
+        for p in self.parents:
+            if p == p_node:
+                p_vals.append(p_val)
+            else:
+                p_vals.append(p.get_current_value())
+        parent_values = tuple(p_vals)
+        probabilities = self.p_dict[parent_values]
+        return probabilities[self.value]
+
     def update_node(self):
-        #TODO: This method is probably incomplete. not actually using info about child nodes
+        #TODO: conditional probability based on child nodes is implemented, but need to check the math
         if self.is_fixed:
             return
         #get values of parents
@@ -48,15 +61,27 @@ class GibbsNode:
                 p_vals.append(p.get_current_value())
             parent_values = tuple(p_vals)
         #get the probability distribution for the current configuration
-        probabilities = self.p_dict[parent_values]
+        probabilities =  list(self.p_dict[parent_values])
+
+        #get conditional probabilities from children
+        if self.children:
+            for c in self.children:
+                for i in range(0, self.max_value+1):
+                    probabilities[i] = probabilities[i] * c.get_cond_prob_given_parent(self, i)
+
+        #normalize
+        normalizer = 1.0 / sum(probabilities)
+        for i in range(0, self.max_value+1):
+            probabilities[i] = probabilities[i] * normalizer
+
         randv = random.random()
         ptotal = 0
         #iterate through and add each probability, use this running total to determine the new value of this node
-        for i in range(0, len(probabilities)):
+        for i in range(0, self.max_value+1):
             ptotal += probabilities[i]
             if randv < ptotal:
                 self.value = i
-                break
+                return
 
 def main():
     amenities = GibbsNode("amenities", ["lots", "little"], {(): [0.3, 0.7]}, [])
