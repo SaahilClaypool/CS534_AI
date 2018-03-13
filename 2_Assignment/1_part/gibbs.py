@@ -16,7 +16,51 @@ class GibbsNode:
         self.max_value = len(self.value_names)-1
         self.is_fixed = False
         self.children = [] #initialize children as empty, add afterwards
+        self.value_counts = {}
+        for v in value_names: 
+            self.value_counts[v] = 0
+        
+    
+    def __str__(self):
+        s = "{}: ".format(self.get_name())
+        for n in self.value_names: 
+            s += "\n\t{}: {}".format(n, self.value_counts[n])
+        return s 
+                
+    def __repr__(self):
+        s = "{}: ".format(self.get_name())
+        for n in self.value_names: 
+            s += "\n\t{}: {}".format(n, self.value_counts[n])
+        return s 
+    
+    def get_independent_probability(self) -> Dict[str, float]:
+        """
+        get the final probability of each state given the counts
+        """
+        print(self.value_counts)
+        for i in self.value_counts.values():
+            print (i)
+        total = sum(self.value_counts.values())
+        if(total == 0):
+            return {}
+        probs = {}
+        for v,k in self.value_counts.items(): 
+            probs[v] = k / total
+        return probs
 
+
+
+    def set_value(self, value: int, iterationNumber: int, throwout) :
+        """
+        Set the given value, track that the value was changed if it is larger than the iteration number
+        (this will effectively allow droppping)
+        """
+        self.value = value
+        # TODO get a real iteration count here
+        if (iterationNumber > throwout-1):
+            self.value_counts[self.value_names[value]] += 1
+
+        
     def get_name(self) -> str:
         return self.name
 
@@ -48,7 +92,7 @@ class GibbsNode:
         probabilities = self.p_dict[parent_values]
         return probabilities[self.value]
 
-    def update_node(self):
+    def update_node(self, iterationNumber: int, throwout: int):
         #TODO: conditional probability based on child nodes is implemented, but need to check the math
         if self.is_fixed:
             return
@@ -67,6 +111,8 @@ class GibbsNode:
         if self.children:
             for c in self.children:
                 for i in range(0, self.max_value+1):
+                    # multiply the probability of the i'th state (given parents) by the probability
+                    # of the i'th state given the child state. Do for each child
                     probabilities[i] = probabilities[i] * c.get_cond_prob_given_parent(self, i)
 
         #normalize
@@ -80,7 +126,9 @@ class GibbsNode:
         for i in range(0, self.max_value+1):
             ptotal += probabilities[i]
             if randv < ptotal:
-                self.value = i
+                # self.value = i
+                # TODO add real iteration number
+                self.set_value(i, iterationNumber, throwout)
                 return
 
 def main():
@@ -94,8 +142,8 @@ def main():
     }, [amenities, neighborhood])
     children = GibbsNode("children", ["bad", "good"], {(0,) : [0.6, 0.4], (1,) : [0.3, 0.7]}, [neighborhood])
     size = GibbsNode("size", ["small", "medium", "large"], {(): [0.33, 0.34, 0.33]}, [])
-    schools = GibbsNode("schools", ["bad", "good"], {(0,) : {0.7, 0.3}, (1,) : {0.8, 0.2}}, [children])
-    age = GibbsNode("age", ["old", "new"], {(0,): [0.3, 0.7], (1,) : {0.6, 0.4}, (2,): {0.9, 0.1}}, [location])
+    schools = GibbsNode("schools", ["bad", "good"], {(0,) : [0.7, 0.3], (1,) : [0.8, 0.2]}, [children])
+    age = GibbsNode("age", ["old", "new"], {(0,): [0.3, 0.7], (1,) : [0.6, 0.4], (2,): [0.9, 0.1]}, [location])
     price = GibbsNode("price", ["cheap", "ok", "expensive"], {
         (0, 0, 0, 0) : [0.5, 0.4, 0.1],
         (0, 0, 0, 1) : [0.4, 0.45, 0.15],
@@ -142,6 +190,23 @@ def main():
     schools.set_children([price])
     age.set_children([price])
     node_list = [amenities, location, age, schools, size, children, price, neighborhood]
+    simulate(node_list, 1000000, 1000)
+    
+def simulate(node_list: Sequence['GibbsNode'], iterations: int, throwout: int):
+    """
+    Choose
+    Update
+    Iterate
+    """
+    mutables : Sequence['GibbsNode'] = list(filter(lambda n : not n.is_fixed, node_list))
+    for i in range(iterations): 
+        selection = random.choice(mutables)
+        selection.update_node(i, throwout)
+    
+    for i in node_list: 
+        print(i)
+        print(i.get_independent_probability())
+        
 
 if __name__ == "__main__":
     main()
