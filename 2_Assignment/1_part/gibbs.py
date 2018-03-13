@@ -56,7 +56,6 @@ class GibbsNode:
         (this will effectively allow droppping)
         """
         self.value = value
-        # TODO get a real iteration count here
         if (iterationNumber > throwout-1):
             self.value_counts[self.value_names[value]] += 1
 
@@ -127,7 +126,6 @@ class GibbsNode:
             ptotal += probabilities[i]
             if randv < ptotal:
                 # self.value = i
-                # TODO add real iteration number
                 self.set_value(i, iterationNumber, throwout)
                 return
 
