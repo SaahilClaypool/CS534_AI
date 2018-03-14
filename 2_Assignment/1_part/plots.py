@@ -7,8 +7,6 @@ def batch_simulate(node_list: Sequence['gibbs.GibbsNode'], iterationNumbs: Seque
     """
     return each simulation statistics, with both with drops and without drops
     """
-    x = node_list[0]
-
     # dict [query][prob]
     drop_probs = dict()
     nodrop_probs = dict()
@@ -56,7 +54,7 @@ def make_plots(probs):
         plt.title(query)
         plt.xlabel("Iterations")
         plt.ylabel("Probability")
-        plt.savefig("img/drop_{}.png".format(state))
+        plt.savefig("img/drop_{}.png".format(query))
         plt.close()
 
     for query, its in nodrops.items(): 
@@ -77,7 +75,7 @@ def make_plots(probs):
         plt.title(query)
         plt.xlabel("Iterations")
         plt.ylabel("Probability")
-        plt.savefig("img/nodrop_{}.png".format(state))
+        plt.savefig("img/nodrop_{}.png".format(query))
         plt.close()
         
     pass
