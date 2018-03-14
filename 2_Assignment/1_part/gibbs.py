@@ -38,9 +38,6 @@ class GibbsNode:
         """
         get the final probability of each state given the counts
         """
-        print(self.value_counts)
-        for i in self.value_counts.values():
-            print (i)
         total = sum(self.value_counts.values())
         if(total == 0):
             return {}
@@ -134,7 +131,7 @@ class GibbsNode:
                 self.set_value(i, iterationNumber, throwout)
                 return
 
-def main():
+def setup():
     amenities = GibbsNode("amenities", ["lots", "little"], {(): [0.3, 0.7]}, [])
     neighborhood = GibbsNode("neighborhood", ["bad", "good"], {(): [0.4, 0.6]}, [])
     location = GibbsNode("location", ["good", "bad", "ugly"], {
@@ -193,7 +190,11 @@ def main():
     schools.set_children([price])
     age.set_children([price])
     node_list = [amenities, location, age, schools, size, children, price, neighborhood]
+    return node_list
 
+def main():
+
+    node_list = setup()
     #set up evidence and node of interest based on commandline arguments
     #no robust error checking of commandline arguments takes place
     target_node_name = sys.argv[1]
@@ -236,10 +237,6 @@ def simulate(node_list: Sequence['GibbsNode'], iterations: int, throwout: int) -
         selection = random.choice(mutables)
         selection.update_node(i, throwout)
     return mutables
-    
-    #for i in node_list:
-    #    print(i)
-    #    print(i.get_independent_probability())
         
 
 if __name__ == "__main__":
