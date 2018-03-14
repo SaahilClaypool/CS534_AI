@@ -1,4 +1,5 @@
 from typing import Type, Sequence, Dict
+import sys
 import random
 
 class GibbsNode:
@@ -58,13 +59,13 @@ class GibbsNode:
         self.value = value
         if (iterationNumber > throwout-1):
             self.value_counts[self.value_names[value]] += 1
-
         
     def get_name(self) -> str:
         return self.name
 
-    def set_fixed(self, f : bool):
+    def set_fixed(self, f : bool, val_str : str):
         self.is_fixed = f
+        self.value = self.value_names.index(val_str)
 
     def set_children(self, children : Sequence['GibbsNode']):
         self.children = children
@@ -78,9 +79,11 @@ class GibbsNode:
     def set_value_random(self):
         self.value = random.randint(0, self.max_value)
 
-    #given the parent has a certain value, what is the conditoinal probability?
-    #computing P(child | Parent)
     def get_cond_prob_given_parent(self, p_node : 'GibbsNode', p_val : int) -> float:
+        """
+        Determine the probability of this node given a certain configuration of a parent node
+        i.e. P (this_value | parent_value)
+        """
         p_vals = []
         for p in self.parents:
             if p == p_node:
@@ -92,7 +95,9 @@ class GibbsNode:
         return probabilities[self.value]
 
     def update_node(self, iterationNumber: int, throwout: int):
-        #TODO: conditional probability based on child nodes is implemented, but need to check the math
+        """
+        Update the current node based on its Markov blanket and basic probability distribution
+        """
         if self.is_fixed:
             return
         #get values of parents
@@ -188,9 +193,39 @@ def main():
     schools.set_children([price])
     age.set_children([price])
     node_list = [amenities, location, age, schools, size, children, price, neighborhood]
-    simulate(node_list, 1000000, 1000)
+
+    #set up evidence and node of interest based on commandline arguments
+    #no robust error checking of commandline arguments takes place
+    target_node_name = sys.argv[1]
+    #default values
+    update_count = 10000
+    drop_count = 1000
+    i = 2
+    while i < len(sys.argv):
+        #set update count
+        if sys.argv[i] == "-u":
+            i += 1
+            update_count = int(sys.argv[i])
+        #set drop count
+        elif sys.argv[i] == "-d":
+            i += 1
+            drop_count = int(sys.argv[i])
+        #otherwise set evidence node
+        else:
+            eq_i = sys.argv[i].find("=")
+            evidence_name = sys.argv[i][:eq_i]
+            evidence_val = sys.argv[i][eq_i+1:]
+            for n in node_list:
+                if n.get_name() == evidence_name:
+                    n.set_fixed(True, evidence_val)
+        i += 1
+
+    simulated_nodes = simulate(node_list, update_count, drop_count)
+    for n in simulated_nodes:
+        if n.get_name() == target_node_name:
+            print("Probabilities of ", target_node_name, " : ", n.get_independent_probability())
     
-def simulate(node_list: Sequence['GibbsNode'], iterations: int, throwout: int):
+def simulate(node_list: Sequence['GibbsNode'], iterations: int, throwout: int) -> Sequence['GibbsNode']:
     """
     Choose
     Update
@@ -200,10 +235,11 @@ def simulate(node_list: Sequence['GibbsNode'], iterations: int, throwout: int):
     for i in range(iterations): 
         selection = random.choice(mutables)
         selection.update_node(i, throwout)
+    return mutables
     
-    for i in node_list: 
-        print(i)
-        print(i.get_independent_probability())
+    #for i in node_list:
+    #    print(i)
+    #    print(i.get_independent_probability())
         
 
 if __name__ == "__main__":
