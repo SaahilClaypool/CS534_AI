@@ -13,7 +13,7 @@ class GibbsNode:
         self.value_names = value_names
         self.p_dict = probability_dict
         self.parents = parents
-        self.value = 0 #initialize value as 0 by default
+        self.value = random.randint(0, len(value_names)-1)#initialize to random value
         self.max_value = len(self.value_names)-1
         self.is_fixed = False
         self.children = [] #initialize children as empty, add afterwards
