@@ -16,6 +16,7 @@ sensor_eq = np.matrix(
 
 x_predict = transition_eq * x_start
 z_predict = sensor_eq * x_predict
+print("z_pred", z_predict)
 
 residual = sensor_input - z_predict
 
