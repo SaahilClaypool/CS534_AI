@@ -17,4 +17,5 @@ for i in range(10):
 for d in dists: 
     print(d)
 
-plot(data)
+# plot(data)
+plot_clusters(data, calc_responsibility(data, dists))

@@ -7,6 +7,7 @@ import csv
 import matplotlib.pyplot as plt
 import scipy.stats as stats
 import numpy as np
+import pandas as pd
 from typing import Sequence, Tuple
 
 class dist(object):
@@ -111,3 +112,19 @@ def plot(data):
     y = [d[1] for d in data]
     plt.scatter(x,y)
     plt.show()
+
+def plot_clusters(data, responsibility): 
+    colors = ['red', 'green', 'blue']
+    labels = ['x', 'y', 'c']
+    d = []
+
+
+    for data, resp in zip(data, responsibility):
+        most_resp = resp.argmax()
+        d.append([*data, colors[most_resp]])
+    
+    df = pd.DataFrame.from_records(d, columns=labels)
+    df.plot(kind='scatter', x='x', y='y', c=df.c)
+    plt.show()
+
+
