@@ -4,6 +4,7 @@ Perform EM on a given input file and finds 3 clusters from the data
 
 #%%
 import csv
+import matplotlib.pyplot as plt
 import scipy.stats as stats
 import numpy as np
 from typing import Sequence, Tuple
@@ -69,7 +70,7 @@ def calc_responsibility(points: Sequence[Tuple[int, int]], dists: Sequence[dist]
         for c in dists:
             r = c.responsibility(point)
             probs.append(r)
-        total_probs.append(probs)
+        total_probs.append(probs / sum(probs))
 
     return np.array(total_probs)
 
@@ -82,42 +83,31 @@ def update_dists(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
     total_weight = np.sum(resp)
     updated_dists = []
     for c, d in enumerate(dists): 
-        weight = np.sum(resp[:, c])
-        rel_weight = weight / total_weight
+        mc = np.sum(resp[:, c]) # total amount of responsibility for this cluster
+        fraction_of_total = mc / len(points) # normalize by number of points
         new_mean_x = 0.0
         new_mean_y = 0.0
         for r, point in enumerate(points): 
             new_mean_x += resp[r][c] * point[0]
             new_mean_y += resp[r][c] * point[1]
         
+        new_mean_x = new_mean_x / mc
+        new_mean_y = new_mean_y / mc
+        
         new_var_x = 0.0
         new_var_y = 0.0
         for r, point in enumerate(points): 
             new_var_x += resp[r][c]  * (point[0] - new_mean_x)**2
             new_var_y += resp[r][c]  * (point[1] - new_mean_y)**2
-            
+        new_var_x = new_var_x / mc
+        new_var_y = new_var_y / mc
 
-        new_dist = dist(new_mean_x / weight, new_var_x / weight, new_mean_y / weight, new_var_y / weight, rel_weight)
+        new_dist = dist(new_mean_x , new_var_x , new_mean_y , new_var_y , fraction_of_total)
         updated_dists.append(new_dist)
     return updated_dists
 
-
-#%% TESTING
-data = load_data()
-
-import matplotlib.pyplot as plt
 def plot(data):
     x = [d[0] for d in data]
     y = [d[1] for d in data]
     plt.scatter(x,y)
     plt.show()
-
-
-dists = [dist(0,10,0, 10, .4), dist(3,10,0, 10, .3), dist(10,30,10, 10, .3)]
-
-for i in range(100): 
-    dists = update_dists(data, dists)
-
-for d in dists:
-    print(d)
-plot(data)
