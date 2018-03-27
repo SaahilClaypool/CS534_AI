@@ -36,7 +36,7 @@ class dist(object):
         """
         cov = [[self.var_x, 0], [0, self.var_y]]
         # Note: prob is really small, but shouldn't matter after you normalize
-        return stats.multivariate_normal([self.mean_x, self.mean_y], cov=cov).pdf(coord)
+        return self.fraction_of_total * stats.multivariate_normal([self.mean_x, self.mean_y], cov=cov).pdf(coord)
 
 
     
@@ -89,8 +89,15 @@ def update_dists(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
         for r, point in enumerate(points): 
             new_mean_x += resp[r][c] * point[0]
             new_mean_y += resp[r][c] * point[1]
+        
+        new_var_x = 0.0
+        new_var_y = 0.0
+        for r, point in enumerate(points): 
+            new_var_x += resp[r][c]  * (point[0] - new_mean_x)**2
+            new_var_y += resp[r][c]  * (point[1] - new_mean_y)**2
+            
 
-        new_dist = dist(new_mean_x / weight, 1, new_mean_y / weight, 1, rel_weight)
+        new_dist = dist(new_mean_x / weight, new_var_x / weight, new_mean_y / weight, new_var_y / weight, rel_weight)
         updated_dists.append(new_dist)
     return updated_dists
 
@@ -103,10 +110,14 @@ def plot(data):
     x = [d[0] for d in data]
     y = [d[1] for d in data]
     plt.scatter(x,y)
+    plt.show()
 
 
-dists = [dist(0,5,0, 5, .4), dist(3,5,0, 5, .3), dist(30,5,10, 5, .3)]
+dists = [dist(0,10,0, 10, .4), dist(3,10,0, 10, .3), dist(10,30,10, 10, .3)]
 
 for i in range(100): 
     dists = update_dists(data, dists)
-print(dists)
+
+for d in dists:
+    print(d)
+plot(data)
