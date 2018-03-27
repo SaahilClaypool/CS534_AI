@@ -18,6 +18,12 @@ class dist(object):
 
         self.fraction_of_total = fraction_of_total
     
+    def __str__(self):
+        return f"xm: {self.mean_x}, xv: {self.var_x}, ym: {self.mean_y}, yv: {self.var_y}, frac: {self.fraction_of_total}"
+
+    def __repr__(self):
+        return str(self)
+    
     def responsibility(self, coord: Tuple[int, int]) -> float: 
         """
         calculate responsibility for a single point
@@ -60,15 +66,34 @@ def calc_responsibility(points: Sequence[Tuple[int, int]], dists: Sequence[dist]
     total_probs = []
     for point in points: 
         probs = []
-        print(point)
         for c in dists:
-            print(c)
             r = c.responsibility(point)
-            print(f"prob: {r}")
             probs.append(r)
         total_probs.append(probs)
 
-    return total_probs
+    return np.array(total_probs)
+
+def update_dists(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
+    """
+    Update the location of the given distributions based on their 'responsibility' 
+    for each point
+    """
+    resp = calc_responsibility(points, dists)
+    total_weight = np.sum(resp)
+    updated_dists = []
+    for c, d in enumerate(dists): 
+        weight = np.sum(resp[:, c])
+        rel_weight = weight / total_weight
+        new_mean_x = 0.0
+        new_mean_y = 0.0
+        for r, point in enumerate(points): 
+            new_mean_x += resp[r][c] * point[0]
+            new_mean_y += resp[r][c] * point[1]
+
+        new_dist = dist(new_mean_x / weight, 1, new_mean_y / weight, 1, rel_weight)
+        updated_dists.append(new_dist)
+    return updated_dists
+
 
 #%% TESTING
 data = load_data()
@@ -79,8 +104,9 @@ def plot(data):
     y = [d[1] for d in data]
     plt.scatter(x,y)
 
-dis = dist(1, 1, 1, 1, 1)
-print(dis.responsibility((1,1)))
-resp = calc_responsibility([[1,2],[1,1], [2,2]], [dist(1,1, 1, 1, 1), dist(2,1, 2, 1, 1)])
-for row in resp: 
-    print(row)
+
+dists = [dist(0,5,0, 5, .4), dist(3,5,0, 5, .3), dist(30,5,10, 5, .3)]
+
+for i in range(100): 
+    dists = update_dists(data, dists)
+print(dists)
