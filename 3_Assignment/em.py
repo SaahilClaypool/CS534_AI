@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import scipy.stats as stats
 import numpy as np
 import pandas as pd
+import random 
 from typing import Sequence, Tuple
 
 class dist(object):
@@ -112,6 +113,16 @@ def plot(data):
     y = [d[1] for d in data]
     plt.scatter(x,y)
     plt.show()
+
+def init_clusters(number=3, minN=0, maxN = 10):
+    clusters = []
+    for _ in range(number): 
+        x = random.random() * (maxN - minN) + minN 
+        y = random.random() * (maxN - minN) + minN 
+        print(f"init: x {x}")
+        print(f"init: y {y}")
+        clusters.append(dist(x, 10, y, 10, 1 / number))
+    return clusters
 
 def plot_clusters(data, responsibility): 
     colors = ['red', 'green', 'blue']
