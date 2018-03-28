@@ -149,7 +149,7 @@ def find_clusters(points: Sequence[Tuple[int, int]], number: int, restarts: int 
 
     return best_model, best_likelihood
 
-def find_number_of_clusters(points: Sequence[Tuple[int, int]], restarts: int = 0, iterations = 75, max_clusters=10) -> Tuple[Sequence[dist], float]:
+def find_number_of_clusters(points: Sequence[Tuple[int, int]], restarts: int = 0, iterations = 75, max_clusters=15) -> Tuple[Sequence[dist], float]:
     """
     Find the best model by determining the best number of clusters
     """
@@ -202,7 +202,7 @@ def init_clusters(number=3, minN=0, maxN = 10):
     return clusters
 
 def plot_clusters(data, responsibility): 
-    colors = ['red', 'green', 'blue', 'black', 'orange', 'steelblue', 'cyan', 'pink', 'purple']
+    colors = ['red', 'green', 'blue', 'black', 'orange', 'steelblue', 'cyan', 'pink', 'purple','steelblue']
     labels = ['x', 'y', 'c']
     d = []
 
