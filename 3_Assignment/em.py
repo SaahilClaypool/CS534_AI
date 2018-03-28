@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 import scipy.stats as stats
 import numpy as np
 import pandas as pd
-import random 
+import random
+import math
 from typing import Sequence, Tuple
 
 class dist(object):
@@ -133,7 +134,7 @@ def find_clusters(points: Sequence[Tuple[int, int]], number: int, restarts: int 
     """
     if (restarts < 1): restarts = 1
     best_model: Sequence[dist]
-    best_likelihood = -1
+    best_likelihood = -math.inf
     for r in range(restarts):
         print(f"restart: {r}")
         dists = init_clusters(number)
@@ -141,14 +142,39 @@ def find_clusters(points: Sequence[Tuple[int, int]], number: int, restarts: int 
             dists = update_dists(points, dists)
 
         # plot_clusters(points, calc_responsibility(points, dists))
-        likeli = compute_BIC(points, dists)
+        likeli = calc_log_likelihood(points, dists)
         if (likeli >= best_likelihood):
             best_likelihood = likeli
             best_model = dists
 
     return (best_model, best_likelihood)
 
+def find_number_of_clusters(points: Sequence[Tuple[int, int]], restarts: int = 0, iterations = 75) -> Tuple[Sequence[dist], float]:
+    """
+    Find the best model by determining the best number of clusters
+    """
+    #default restarts is 1
+    if (restarts < 1): restarts = 1
+    smallest_BIC = math.inf
+    best_model: Sequence[dist]
+    best_model_likelihood = 0
+    best_n = 0
 
+    #our model should have, at most, the same number of clusters as points
+    for i in range(len(points)):
+        model, likelihood = find_clusters(points, i+1, restarts, iterations)
+        mod_BIC = compute_BIC(points, model)
+        print("mod BIC for run on ", i+1," clusters: ", mod_BIC)
+        if mod_BIC < smallest_BIC:
+            smallest_BIC = mod_BIC
+            best_model_likelihood = likelihood
+            best_model = model
+            best_n = i+1
+        else:
+            #the value of the computed BIC is no longer decreasing, so break
+            break
+    print(f"Best value for n was {best_n}")
+    return (best_model, best_model_likelihood)
 
 
 def compute_BIC(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
