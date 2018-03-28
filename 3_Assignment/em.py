@@ -49,12 +49,11 @@ def load_data():
     """
     return a list of [(x,y)]
     """
-    coords = []
+    coords = np.empty([0,2])
     with open("./sample.csv") as csvfile:
         reader = csv.reader(csvfile)
         for row in reader:
-            coords.append((float(row[0]), float(row[1])))
-        
+            coords = np.append(coords, [[float(row[0]), float(row[1])]], axis=0)
     return coords
 
 def calc_responsibility(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
@@ -84,12 +83,14 @@ def update_dists(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
     resp = calc_responsibility(points, dists)
     total_weight = np.sum(resp)
     updated_dists = []
+    error_var = 0
     for c, d in enumerate(dists): 
         mc = np.sum(resp[:, c]) # total amount of responsibility for this cluster
         fraction_of_total = mc / len(points) # normalize by number of points
         new_mean_x = 0.0
         new_mean_y = 0.0
-        for r, point in enumerate(points): 
+        print(points.shape)
+        for r, point in enumerate(points):
             new_mean_x += resp[r][c] * point[0]
             new_mean_y += resp[r][c] * point[1]
         
@@ -106,7 +107,17 @@ def update_dists(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
 
         new_dist = dist(new_mean_x , new_var_x , new_mean_y , new_var_y , fraction_of_total)
         updated_dists.append(new_dist)
+    print(compute_BIC(points, dists))
     return updated_dists
+
+def compute_BIC(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
+    error_total = 0
+    for d in dists:
+        error_total += d.var_x + d.var_y
+    n = len(points)
+    k = len(dists)
+    bic = n*np.log(error_total)+k*np.log(n)
+    return bic
 
 def plot(data):
     x = [d[0] for d in data]
@@ -125,15 +136,15 @@ def init_clusters(number=3, minN=0, maxN = 10):
     return clusters
 
 def plot_clusters(data, responsibility): 
-    colors = ['red', 'green', 'blue']
+    colors = ['red', 'green', 'blue', 'black', 'orange']
     labels = ['x', 'y', 'c']
     d = []
-
 
     for data, resp in zip(data, responsibility):
         most_resp = resp.argmax()
         d.append([*data, colors[most_resp]])
-    
+
+
     df = pd.DataFrame.from_records(d, columns=labels)
     df.plot(kind='scatter', x='x', y='y', c=df.c)
     plt.show()
