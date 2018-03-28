@@ -1,19 +1,7 @@
 #%% TESTING
 from em import *
 
-data = load_data()
+data = load_data("small_sample.csv")
 
-
-#dists, like = find_clusters(data, 3, restarts=3, iterations=100)
-dists, like = find_number_of_clusters(data, iterations= 75)
-print("BIC:",compute_BIC(data, dists))
-
-for d in dists:
-    print(d)
-
-# plot(data)
-plot_clusters(data, calc_responsibility(data, dists))
-#new bics
-#16242.941596706065 for 4
-#16242.917838032536 for 3
-#16437.26073170541 for 2
+best_model, likeli, n = find_number_of_clusters(data, max_clusters=7, iterations=50)
+plot_clusters(data, calc_responsibility(data, best_model))

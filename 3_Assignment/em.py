@@ -40,18 +40,18 @@ class dist(object):
         """
         cov = [[self.var_x, 0], [0, self.var_y]]
         # Note: prob is really small, but shouldn't matter after you normalize
-        return self.fraction_of_total * stats.multivariate_normal([self.mean_x, self.mean_y], cov=cov).pdf(coord)
+        return self.fraction_of_total * stats.multivariate_normal([self.mean_x, self.mean_y],cov=cov).pdf(coord)
 
 
     
     pass
 
-def load_data(): 
+def load_data(filename="sample.csv"): 
     """
     return a list of [(x,y)]
     """
     coords = np.empty([0,2])
-    with open("./sample.csv") as csvfile:
+    with open(filename) as csvfile:
         reader = csv.reader(csvfile)
         for row in reader:
             coords = np.append(coords, [[float(row[0]), float(row[1])]], axis=0)
@@ -103,10 +103,10 @@ def update_dists(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
     updated_dists = []
     error_var = 0
     for c, d in enumerate(dists): 
-        mc = np.sum(resp[:, c]) # total amount of responsibility for this cluster
+        mc = max(.1, np.sum(resp[:, c])) # total amount of responsibility for this cluster
         fraction_of_total = mc / len(points) # normalize by number of points
-        new_mean_x = 0.0
-        new_mean_y = 0.0
+        new_mean_x = 0.1
+        new_mean_y = 0.1
         for r, point in enumerate(points):
             new_mean_x += resp[r][c] * point[0]
             new_mean_y += resp[r][c] * point[1]
@@ -114,8 +114,8 @@ def update_dists(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
         new_mean_x = new_mean_x / mc
         new_mean_y = new_mean_y / mc
         
-        new_var_x = 0.0
-        new_var_y = 0.0
+        new_var_x = 0.1
+        new_var_y = 0.1
         for r, point in enumerate(points): 
             new_var_x += resp[r][c]  * (point[0] - new_mean_x)**2
             new_var_y += resp[r][c]  * (point[1] - new_mean_y)**2
@@ -128,15 +128,15 @@ def update_dists(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
     return updated_dists
 
 def find_clusters(points: Sequence[Tuple[int, int]], number: int, restarts: int = 0, iterations = 75) -> \
-        Tuple[Sequence[dist], float]:
+        Sequence[dist]:
     """
     Find the best model with the given number of clusters and restarts
     """
     if (restarts < 1): restarts = 1
     best_model: Sequence[dist]
     best_likelihood = -math.inf
+
     for r in range(restarts):
-        print(f"restart: {r}")
         dists = init_clusters(number)
         for i in range(iterations):
             dists = update_dists(points, dists)
@@ -147,9 +147,9 @@ def find_clusters(points: Sequence[Tuple[int, int]], number: int, restarts: int 
             best_likelihood = likeli
             best_model = dists
 
-    return (best_model, best_likelihood)
+    return best_model, best_likelihood
 
-def find_number_of_clusters(points: Sequence[Tuple[int, int]], restarts: int = 0, iterations = 75) -> Tuple[Sequence[dist], float]:
+def find_number_of_clusters(points: Sequence[Tuple[int, int]], restarts: int = 0, iterations = 75, max_clusters=10) -> Tuple[Sequence[dist], float]:
     """
     Find the best model by determining the best number of clusters
     """
@@ -160,8 +160,10 @@ def find_number_of_clusters(points: Sequence[Tuple[int, int]], restarts: int = 0
     best_model_likelihood = 0
     best_n = 0
 
+    max_clusters =  min(len(points), max_clusters)
+
     #our model should have, at most, the same number of clusters as points
-    for i in range(len(points)):
+    for i in range(max_clusters):
         model, likelihood = find_clusters(points, i+1, restarts, iterations)
         mod_BIC = compute_BIC(points, model)
         print("mod BIC for run on ", i+1," clusters: ", mod_BIC)
@@ -174,17 +176,15 @@ def find_number_of_clusters(points: Sequence[Tuple[int, int]], restarts: int = 0
             #the value of the computed BIC is no longer decreasing, so break
             break
     print(f"Best value for n was {best_n}")
-    return (best_model, best_model_likelihood)
+    return (best_model, best_model_likelihood, best_n)
+
 
 
 def compute_BIC(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
     error_total = 0
-    #for d in dists:
-    #    error_total += np.sqrt(np.square(d.var_x + d.var_y))
     n = len(points)
     k = len(dists)
     bic = -2*calc_log_likelihood(points, dists)+k*np.log(n)
-   # bic = n*np.log(error_total)+k*np.log(n)
     return bic
 
 def plot(data):
@@ -198,13 +198,11 @@ def init_clusters(number=3, minN=0, maxN = 10):
     for _ in range(number): 
         x = random.random() * (maxN - minN) + minN 
         y = random.random() * (maxN - minN) + minN 
-        print(f"init: x {x}")
-        print(f"init: y {y}")
         clusters.append(dist(x, 10, y, 10, 1 / number))
     return clusters
 
 def plot_clusters(data, responsibility): 
-    colors = ['red', 'green', 'blue', 'black', 'orange']
+    colors = ['red', 'green', 'blue', 'black', 'orange', 'steelblue', 'cyan', 'pink', 'purple']
     labels = ['x', 'y', 'c']
     d = []
 
