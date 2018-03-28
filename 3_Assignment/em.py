@@ -75,6 +75,23 @@ def calc_responsibility(points: Sequence[Tuple[int, int]], dists: Sequence[dist]
 
     return np.array(total_probs)
 
+def calc_log_likelihood(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
+    """
+    args:
+        points: matrix for [X,Y] each row is point
+
+    returns:
+        total sum of log(r1+r2+...) where rn is the responsibility computed by each dist
+    """
+    log_like = 0
+    for point in points:
+        p_sum = 0
+        for c in dists:
+            r = c.responsibility(point)
+            p_sum += r
+        log_like += np.log(p_sum)
+    return log_like
+
 def update_dists(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
     """
     Update the location of the given distributions based on their 'responsibility' 
@@ -89,7 +106,6 @@ def update_dists(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
         fraction_of_total = mc / len(points) # normalize by number of points
         new_mean_x = 0.0
         new_mean_y = 0.0
-        print(points.shape)
         for r, point in enumerate(points):
             new_mean_x += resp[r][c] * point[0]
             new_mean_y += resp[r][c] * point[1]
@@ -107,16 +123,17 @@ def update_dists(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
 
         new_dist = dist(new_mean_x , new_var_x , new_mean_y , new_var_y , fraction_of_total)
         updated_dists.append(new_dist)
-    print(compute_BIC(points, dists))
+    print("Log likelihood:", calc_log_likelihood(points, dists))
     return updated_dists
 
 def compute_BIC(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
     error_total = 0
-    for d in dists:
-        error_total += d.var_x + d.var_y
+    #for d in dists:
+    #    error_total += np.sqrt(np.square(d.var_x + d.var_y))
     n = len(points)
     k = len(dists)
-    bic = n*np.log(error_total)+k*np.log(n)
+    bic = -2*calc_log_likelihood(points, dists)+k*np.log(n)
+   # bic = n*np.log(error_total)+k*np.log(n)
     return bic
 
 def plot(data):
