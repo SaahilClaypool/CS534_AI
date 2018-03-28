@@ -89,7 +89,6 @@ def update_dists(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
         fraction_of_total = mc / len(points) # normalize by number of points
         new_mean_x = 0.0
         new_mean_y = 0.0
-        print(points.shape)
         for r, point in enumerate(points):
             new_mean_x += resp[r][c] * point[0]
             new_mean_y += resp[r][c] * point[1]
@@ -107,8 +106,33 @@ def update_dists(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
 
         new_dist = dist(new_mean_x , new_var_x , new_mean_y , new_var_y , fraction_of_total)
         updated_dists.append(new_dist)
-    print(compute_BIC(points, dists))
+    # print(compute_BIC(points, dists))
     return updated_dists
+
+def find_clusters(points: Sequence[Tuple[int, int]], number: int, restarts: int = 0, iterations = 75) -> \
+        Tuple[Sequence[dist], float]:
+    """
+    Find the best model with the given number of clusters and restarts
+    """
+    if (restarts < 1): restarts = 1
+    best_model: Sequence[dist]
+    best_likelihood = -1
+    for r in range(restarts):
+        print(f"restart: {r}")
+        dists = init_clusters(number)
+        for i in range(iterations):
+            dists = update_dists(points, dists)
+
+        # plot_clusters(points, calc_responsibility(points, dists))
+        likeli = compute_BIC(points, dists)
+        if (likeli >= best_likelihood):
+            best_likelihood = likeli
+            best_model = dists
+    
+    return (best_model, best_likelihood)
+
+
+
 
 def compute_BIC(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
     error_total = 0
