@@ -12,6 +12,9 @@ import random
 import math
 from typing import Sequence, Tuple
 
+import sys
+
+
 class dist(object):
     def __init__(self, mean_x, var_x, mean_y, var_y, fraction_of_total):
         self.mean_x = mean_x
@@ -166,7 +169,7 @@ def find_number_of_clusters(points: Sequence[Tuple[int, int]], restarts: int = 0
     for i in range(max_clusters):
         model, likelihood = find_clusters(points, i+1, restarts, iterations)
         mod_BIC = compute_BIC(points, model)
-        print("mod BIC for run on ", i+1," clusters: ", mod_BIC)
+        print("model BIC calculated for run on ", i+1," clusters: ", mod_BIC)
         if mod_BIC < smallest_BIC:
             smallest_BIC = mod_BIC
             best_model_likelihood = likelihood
@@ -215,4 +218,27 @@ def plot_clusters(data, responsibility):
     df.plot(kind='scatter', x='x', y='y', c=df.c)
     plt.show()
 
+def main():
+    """
+    take two inputs: a file containing data points and the number of clusters to use (or the letter X to find the
+    best number of clusters for the data)
+    """
+    data_file = sys.argv[1]
+    data = load_data(data_file)
+    print("Data loaded")
+    if sys.argv[2] == "X":
+        print("Beginning computation EM and determining best number of clusters based on BIC:")
+        best_model, likeli, num = find_number_of_clusters(data, iterations=75, restarts=2)
+        print("Best number of clusters: ", num)
+    else:
+        num = int(sys.argv[2])
+        print("Beginning computation of EM on ", num, " clusters:")
+        best_model, likeli = find_clusters(data, number=num,  iterations=75, restarts=2)
+    if num <= 10:
+        plot_clusters(data, calc_responsibility(data, best_model))
+    else:
+        print("Number of clusters too large to plot with pretty colors.")
+    print("Final calculated log likelihood of the model: ", likeli)
 
+if __name__ == "__main__":
+    main()
