@@ -94,7 +94,7 @@ def calc_log_likelihood(points: Sequence[Tuple[int, int]], dists: Sequence[dist]
     for pi, point in enumerate(points):
         p_sum = 0
         for ci, c in enumerate(dists):
-            r = resp[pi][ci]
+            r = c.responsibility(point)
             p_sum += r
         log_like += np.log(p_sum)
     return log_like
@@ -149,7 +149,7 @@ def find_clusters(points: Sequence[Tuple[int, int]], number: int, restarts: int 
             dists = update_dists(points, dists)
             new_likelihood = calc_log_likelihood(points, dists)
             #if change in likelihood is below tolerance, then break
-            print(math.fabs(prev_likelihood - new_likelihood))
+            print(f"diff {math.fabs(prev_likelihood - new_likelihood)}")
             if math.fabs(prev_likelihood - new_likelihood) < tol:
                 break
             else:
