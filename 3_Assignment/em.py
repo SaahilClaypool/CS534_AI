@@ -24,6 +24,9 @@ class dist(object):
         self.var_y = var_y
 
         self.fraction_of_total = fraction_of_total
+
+        self.cov = [[self.var_x, 0], [0, self.var_y]]
+        self.mvn = stats.multivariate_normal([self.mean_x, self.mean_y],cov=self.cov)
     
     def __str__(self):
         return f"xm: {self.mean_x}, xv: {self.var_x}, ym: {self.mean_y}, yv: {self.var_y}, frac: {self.fraction_of_total}"
@@ -41,9 +44,8 @@ class dist(object):
         returns:
             float probability it is from this distribution
         """
-        cov = [[self.var_x, 0], [0, self.var_y]]
         # Note: prob is really small, but shouldn't matter after you normalize
-        return self.fraction_of_total * stats.multivariate_normal([self.mean_x, self.mean_y],cov=cov).pdf(coord)
+        return self.fraction_of_total * self.mvn.pdf(coord)
 
 
     
@@ -131,19 +133,27 @@ def update_dists(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
     # print(compute_BIC(points, dists))
     return updated_dists
 
-def find_clusters(points: Sequence[Tuple[int, int]], number: int, restarts: int = 0, iterations = 75) -> \
+def find_clusters(points: Sequence[Tuple[int, int]], number: int, restarts: int = 0, iterations = 75, tol: float = 0.01) -> \
         Sequence[dist]:
     """
     Find the best model with the given number of clusters and restarts
     """
     if (restarts < 1): restarts = 1
     best_model: Sequence[dist]
+    prev_likelihood = -math.inf
     best_likelihood = -math.inf
 
     for r in range(restarts):
         dists = init_clusters(number, data=points)
         for i in range(iterations):
             dists = update_dists(points, dists)
+            new_likelihood = calc_log_likelihood(points, dists)
+            #if change in likelihood is below tolerance, then break
+            print(math.fabs(prev_likelihood - new_likelihood))
+            if math.fabs(prev_likelihood - new_likelihood) < tol:
+                break
+            else:
+                prev_likelihood = new_likelihood
 
         # plot_clusters(points, calc_responsibility(points, dists))
         likeli = calc_log_likelihood(points, dists)
@@ -153,7 +163,7 @@ def find_clusters(points: Sequence[Tuple[int, int]], number: int, restarts: int 
 
     return best_model, best_likelihood
 
-def find_number_of_clusters(points: Sequence[Tuple[int, int]], restarts: int = 0, iterations = 75, max_clusters=15) -> Tuple[Sequence[dist], float]:
+def find_number_of_clusters(points: Sequence[Tuple[int, int]], restarts: int = 0, iterations = 75, max_clusters=15, tol: float = 0.01) -> Tuple[Sequence[dist], float]:
     """
     Find the best model by determining the best number of clusters
     """
@@ -168,7 +178,7 @@ def find_number_of_clusters(points: Sequence[Tuple[int, int]], restarts: int = 0
 
     #our model should have, at most, the same number of clusters as points
     for i in range(max_clusters):
-        model, likelihood = find_clusters(points, i+1, restarts, iterations)
+        model, likelihood = find_clusters(points, i+1, restarts, iterations, tol=tol)
         mod_BIC = compute_BIC(points, model)
         print("model BIC calculated for run on ", i+1," clusters: ", mod_BIC)
         if mod_BIC < smallest_BIC:
@@ -185,9 +195,9 @@ def find_number_of_clusters(points: Sequence[Tuple[int, int]], restarts: int = 0
 
 
 def compute_BIC(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
-    error_total = 0
     n = len(points)
-    k = len(dists)
+    #set the number of parameters as 3 times the number of clusters used
+    k = 3*len(dists)
     bic = -2*calc_log_likelihood(points, dists)+k*np.log(n)
     return bic
 
@@ -245,6 +255,7 @@ def main():
         num = int(sys.argv[2])
         print("Beginning computation of EM on ", num, " clusters:")
         best_model, likeli = find_clusters(data, number=num,  iterations=75, restarts=2)
+    print("Final calculated log likelihood of the model: ", likeli)
     if num <= 10:
         plot_clusters(data, calc_responsibility(data, best_model))
     else:
