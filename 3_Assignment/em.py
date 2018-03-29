@@ -88,10 +88,11 @@ def calc_log_likelihood(points: Sequence[Tuple[int, int]], dists: Sequence[dist]
         total sum of log(r1+r2+...) where rn is the responsibility computed by each dist
     """
     log_like = 0
-    for point in points:
+    resp = calc_responsibility(points, dists)
+    for pi, point in enumerate(points):
         p_sum = 0
-        for c in dists:
-            r = c.responsibility(point)
+        for ci, c in enumerate(dists):
+            r = resp[pi][ci]
             p_sum += r
         log_like += np.log(p_sum)
     return log_like
@@ -140,7 +141,7 @@ def find_clusters(points: Sequence[Tuple[int, int]], number: int, restarts: int 
     best_likelihood = -math.inf
 
     for r in range(restarts):
-        dists = init_clusters(number)
+        dists = init_clusters(number, data=points)
         for i in range(iterations):
             dists = update_dists(points, dists)
 
@@ -196,11 +197,21 @@ def plot(data):
     plt.scatter(x,y)
     plt.show()
 
-def init_clusters(number=3, minN=0, maxN = 10):
+def init_clusters(number=3, minN=-1, maxN = -1, data=[]):
+    minx = miny = minN
+    maxx = maxy = maxN
+    varx = vary = 10
+    if (len(data) is not 0):
+        minx = np.min(np.array(data)[:,0])
+        maxx = np.max(np.array(data)[:,0])
+        miny = np.min(np.array(data)[:,1])
+        maxy = np.max(np.array(data)[:,1])
+        varx = np.var(np.array(data)[:,0]) / number
+        vary = np.var(np.array(data)[:,1]) / number
     clusters = []
     for _ in range(number): 
-        x = random.random() * (maxN - minN) + minN 
-        y = random.random() * (maxN - minN) + minN 
+        x = random.random() * (minx - maxx) + minx
+        y = random.random() * (miny - maxy) + maxy
         clusters.append(dist(x, 10, y, 10, 1 / number))
     return clusters
 
