@@ -28,7 +28,7 @@ def make_clusters(clusters=3, minx=0, maxx=10, minv=.1, maxv=.2, minPoints=15, m
     return points
 
 
-def write_clusters(filename="custom_sample.csv", number=8):
+def write_clusters(filename="custom_sample.csv", number=3):
     with open(filename,"w+") as my_csv:
         csvWriter = csv.writer(my_csv,delimiter=',', lineterminator='\n')
         csvWriter.writerows(make_clusters(number) )

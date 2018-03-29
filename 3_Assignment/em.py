@@ -133,7 +133,7 @@ def update_dists(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
     # print(compute_BIC(points, dists))
     return updated_dists
 
-def find_clusters(points: Sequence[Tuple[int, int]], number: int, restarts: int = 0, iterations = 75, tol: float = 0.01) -> \
+def find_clusters(points: Sequence[Tuple[int, int]], number: int, restarts: int = 0, iterations = 75, tol: float = .0000000000000001) -> \
         Sequence[dist]:
     """
     Find the best model with the given number of clusters and restarts
@@ -163,7 +163,7 @@ def find_clusters(points: Sequence[Tuple[int, int]], number: int, restarts: int 
 
     return best_model, best_likelihood
 
-def find_number_of_clusters(points: Sequence[Tuple[int, int]], restarts: int = 0, iterations = 75, max_clusters=15, tol: float = 0.01) -> Tuple[Sequence[dist], float]:
+def find_number_of_clusters(points: Sequence[Tuple[int, int]], restarts: int = 0, iterations = 75, max_clusters=15, tol: float = .0000000000000001) -> Tuple[Sequence[dist], float]:
     """
     Find the best model by determining the best number of clusters
     """
