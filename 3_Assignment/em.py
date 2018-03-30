@@ -177,7 +177,7 @@ def find_number_of_clusters(points: Sequence[Tuple[int, int]], restarts: int = 0
     max_clusters =  min(len(points), max_clusters)
 
     #our model should have, at most, the same number of clusters as points
-    for i in range(max_clusters):
+    for i in range(2, max_clusters):
         model, likelihood = find_clusters(points, i+1, restarts, iterations, tol=tol)
         mod_BIC = compute_BIC(points, model)
         print("model BIC calculated for run on ", i+1," clusters: ", mod_BIC)
@@ -222,7 +222,7 @@ def init_clusters(number=3, minN=-1, maxN = -1, data=[]):
     for _ in range(number): 
         x = random.random() * (minx - maxx) + minx
         y = random.random() * (miny - maxy) + maxy
-        clusters.append(dist(x, 10, y, 10, 1 / number))
+        clusters.append(dist(x, varx, y, vary, 1 / number))
     return clusters
 
 def plot_clusters(data, responsibility): 
@@ -236,7 +236,7 @@ def plot_clusters(data, responsibility):
 
 
     df = pd.DataFrame.from_records(d, columns=labels)
-    df.plot(kind='scatter', x='x', y='y', c=df.c)
+    df.plot(kind='scatter', x='x', y='y', c=df.c, alpha=.5)
     plt.show()
 
 def main():
