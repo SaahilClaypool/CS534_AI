@@ -39,4 +39,4 @@ def write_given_clusters(filename="custom_sample.csv", clusters=[]):
         csvWriter = csv.writer(my_csv,delimiter=',', lineterminator='\n')
         csvWriter.writerows(clusters)
 
-write_given_clusters("sample5.csv", make_clusters(clusters=5, minx = 0, maxx = 10, minv = .1, maxv = .2, minPoints = 50, maxPoints = 60))
+write_given_clusters("sample3.csv", make_clusters(clusters=3, minx = 0, maxx = 10, minv = .1, maxv = .2, minPoints = 100, maxPoints = 120))
