@@ -133,23 +133,33 @@ def update_dists(points: Sequence[Tuple[int, int]], dists: Sequence[dist]):
     # print(compute_BIC(points, dists))
     return updated_dists
 
-def find_clusters(points: Sequence[Tuple[int, int]], number: int, restarts: int = 0, iterations = 75, tol: float = .0000000000000001) -> \
+def find_clusters(points: Sequence[Tuple[int, int]], number: int, restarts: int = 0, iterations = 75, tol: float = .00001, plot=False) -> \
         Sequence[dist]:
     """
     Find the best model with the given number of clusters and restarts
     """
-    if (restarts < 1): restarts = 1
+    if (restarts < 1 or plot): restarts = 1
     best_model: Sequence[dist]
     prev_likelihood = -math.inf
     best_likelihood = -math.inf
 
     for r in range(restarts):
         dists = init_clusters(number, data=points)
+        llh = []
         for i in range(iterations):
             dists = update_dists(points, dists)
             new_likelihood = calc_log_likelihood(points, dists)
             #if change in likelihood is below tolerance, then break
-            print(f"diff {math.fabs(prev_likelihood - new_likelihood)}")
+            # print(f"diff {math.fabs(prev_likelihood - new_likelihood)}")
+            llh.append(new_likelihood)
+            if i == 60:
+                if(plot):
+                    plt.plot(llh)
+                    plt.show()
+                    print(f"Iterations: {i}")
+                    for cluster_num, c in enumerate(dists):
+                        print(f"{cluster_num}: {c}")
+
             if math.fabs(prev_likelihood - new_likelihood) < tol:
                 break
             else:
@@ -160,6 +170,13 @@ def find_clusters(points: Sequence[Tuple[int, int]], number: int, restarts: int 
         if (likeli >= best_likelihood):
             best_likelihood = likeli
             best_model = dists
+        
+    if(plot):
+        plt.plot(llh)
+        plt.show()
+        print(f"Iterations: {i}")
+        for cluster_num, c in enumerate(dists):
+            print(f"{cluster_num}: {c}")
 
     return best_model, best_likelihood
 
