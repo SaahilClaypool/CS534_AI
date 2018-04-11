@@ -214,7 +214,7 @@ def move_fun(move, x, y, board, board_width, board_height, \
         trial_complete = True
 
     if move != 'give-up':
-        reward += move_reward
+        reward = move_reward
     return x, y, reward, trial_complete
     # uh oh SpaghettiOs
 
@@ -231,12 +231,12 @@ def main():
     board = load_board()
     trained_utilities, rewards = train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, num_trials)
 
-    # plot(rewards)
+    plot(rewards)
 
 def plot(rewards):
     offset = 0
     points = []
-    group_size = 100
+    group_size = 20
     while(offset + group_size < len(rewards)):
         points.append(sum(rewards[offset: offset + group_size] ) / group_size)
         offset += group_size
