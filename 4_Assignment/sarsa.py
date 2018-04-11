@@ -114,15 +114,17 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
                     mod_move = 'left'
                 else:
                     mod_move = 'up'
+            if move == 'give-up':
+                mod_move = 'give-up'
 
-            x, y, cur_reward, trial_complete = move_fun(mod_move, x, y, board, board_width, \
+            x, y, reward, trial_complete = move_fun(mod_move, x, y, board, board_width, \
                                             board_height, give_up_reward, pit_reward, \
-                                            goal_reward, move_reward)
+                                            goal_reward, move_reward, reward)
             if(modifier == 'double' and not trial_complete):
-                x, y, cur_reward, trial_complete = move_fun(mod_move, x, y, board, board_width, \
+                x, y, reward, trial_complete = move_fun(mod_move, x, y, board, board_width, \
                                                 board_height, give_up_reward, pit_reward, \
-                                                goal_reward, move_reward)
-            reward += cur_reward
+                                                goal_reward, move_reward, reward)
+            # reward += cur_reward
             if not first_move:
                 move_index = 0
                 prev_move_index = 0
@@ -136,6 +138,7 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
             first_move = False
 
         # end trial
+        utilities[y][x][move_index] += alpha * reward 
         trial_num += 1
         rewards.append(reward)
 
@@ -150,7 +153,7 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
     return utilities, rewards
 
 def move_fun(move, x, y, board, board_width, board_height, \
-         give_up_reward, pit_reward, goal_reward, move_reward):
+         give_up_reward, pit_reward, goal_reward, move_reward, reward):
     """
     returns:
         x, y, trial_complete, reward
@@ -172,7 +175,7 @@ def move_fun(move, x, y, board, board_width, board_height, \
             x -= 1
 
     if move == 'give-up':
-        reward = give_up_reward
+        reward += give_up_reward
         trial_complete = True
 
     # check current state after move
@@ -183,7 +186,7 @@ def move_fun(move, x, y, board, board_width, board_height, \
         reward = goal_reward
         trial_complete = True
     else:
-        reward = move_reward
+        reward += move_reward
     return x, y, reward, trial_complete
     # uh oh SpaghettiOs
 
@@ -194,8 +197,10 @@ def main():
     give_up_reward = float(sys.argv[4])
     num_trials = int(sys.argv[5])
     epsilon = float(sys.argv[6])
+    print(goal_reward, pit_reward, give_up_reward, num_trials)
 
-    board = initialize_board()
+    # board = initialize_board()
+    board = load_board()
     trained_utilities, rewards = train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, num_trials)
 
     plot(rewards)
@@ -203,7 +208,7 @@ def main():
 def plot(rewards): 
     offset = 0
     points = []
-    group_size = 500
+    group_size = 100
     while(offset + group_size < len(rewards)): 
         points.append(sum(rewards[offset: offset + group_size] ) / group_size)
         offset += group_size
