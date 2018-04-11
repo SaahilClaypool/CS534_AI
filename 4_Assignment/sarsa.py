@@ -109,35 +109,13 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
                 else:
                     move = 'up'
 
-            #TODO double movement not implemented here
-            # perform movement
-            if move == 'up':
-                if y != 0:
-                    y -= 1
-            elif move == 'right':
-                if x != board_width - 1:
-                    x += 1
-            elif move == 'down':
-                if y != board_height - 1:
-                    y += 1
-            else:
-                if x != 0:
-                    x -= 1
-
-            if move == 'give-up':
-                reward = give_up_reward
-                trial_complete = True
-
-            # check current state after move
-            if board[y][x] == 'P':
-                reward = pit_reward
-                trial_complete = True
-            elif board[y][x] == 'G':
-                reward = goal_reward
-                trial_complete = True
-            else:
-                reward = move_reward
-            # uh oh SpaghettiOs
+            x, y, reward, trial_complete = move_fun(move, x, y, board, board_width, \
+                                            board_height, give_up_reward, pit_reward, \
+                                            goal_reward, move_reward)
+            if(modifier == 'double' and not trial_complete):
+                x, y, reward, trial_complete = move_fun(move, x, y, board, board_width, \
+                                                board_height, give_up_reward, pit_reward, \
+                                                goal_reward, move_reward)
             move_index = 0
             for i in range(len(moves)):
                 if moves[i] == move:
@@ -154,6 +132,44 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
         print("")
     return utilities
 
+def move_fun(move, x, y, board, board_width, board_height, \
+         give_up_reward, pit_reward, goal_reward, move_reward):
+    """
+    returns: 
+        x, y, trial_complete, reward
+    """
+    trial_complete = False
+    reward = 0
+    #TODO double movement not implemented here
+    # perform movement
+    if move == 'up':
+        if y != 0:
+            y -= 1
+    elif move == 'right':
+        if x != board_width - 1:
+            x += 1
+    elif move == 'down':
+        if y != board_height - 1:
+            y += 1
+    else:
+        if x != 0:
+            x -= 1
+
+    if move == 'give-up':
+        reward = give_up_reward
+        trial_complete = True
+
+    # check current state after move
+    if board[y][x] == 'P':
+        reward = pit_reward
+        trial_complete = True
+    elif board[y][x] == 'G':
+        reward = goal_reward
+        trial_complete = True
+    else:
+        reward = move_reward
+    return x, y, reward, trial_complete
+    # uh oh SpaghettiOs
 
 def main():
     goal_reward = 10
