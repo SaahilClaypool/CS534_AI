@@ -52,12 +52,18 @@ def best_move(utilities, y, x):
 
 def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, num_trials):
     alpha = 0.5
-    gamma = 0.1
+    gamma = 0.9
     moves = ['up', 'right', 'down', 'left', 'give-up']
     moves_smol = ['^', '>', 'v', '<', 'G']
     board_width = len(board[0])
     board_height = len(board)
     utilities = [[[0 for i in range(len(moves))] for j in range(board_width)] for k in range(board_height)]
+    for row in range(board_height):
+        for col in range(board_width):
+            if board[row][col] == 'O':
+                utilities[row][col] = [goal_reward for i in range(len(moves))]
+            elif board[row][col] == 'P':
+                utilities[row][col] = [pit_reward for i in range(len(moves))]
 
     rewards = []
     trial_num = 0
@@ -70,14 +76,19 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
         move = ''
         prev_x = x
         prev_y = y
+        new_x = x
+        new_y = y
         prev_move = ''
         trial_complete = False
         reward = 0
+        running_reward = 0
 
         first_move = True
         while not trial_complete:
             prev_x = x
             prev_y = y
+            x = new_x
+            y = new_y
             prev_move = move
 
             if random() < epsilon:
@@ -117,14 +128,14 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
             if move == 'give-up':
                 mod_move = 'give-up'
 
-            x, y, reward, trial_complete = move_fun(mod_move, x, y, board, board_width, \
+            new_x, new_y, reward, trial_complete = move_fun(mod_move, x, y, board, board_width, \
                                             board_height, give_up_reward, pit_reward, \
                                             goal_reward, move_reward, reward)
             if(modifier == 'double' and not trial_complete):
-                x, y, reward, trial_complete = move_fun(mod_move, x, y, board, board_width, \
+                new_x, new_y, reward, trial_complete = move_fun(mod_move, new_x, new_y, board, board_width, \
                                                 board_height, give_up_reward, pit_reward, \
                                                 goal_reward, move_reward, reward)
-            # reward += cur_reward
+            running_reward += reward
             move_index = 0
             prev_move_index = 0
             for i in range(len(moves)):
@@ -138,7 +149,14 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
             first_move = False
 
         # end trial
-        utilities[y][x][move_index] += alpha * reward
+        move_index = 0
+        for i in range(len(moves)):
+            if moves[i] == move:
+                move_index = i
+        if move == 'give-up':
+            utilities[y][x][4] += alpha * ((1+gamma)*running_reward - utilities[y][x][4])
+        else:
+            utilities[y][x][move_index] += alpha * ((1+gamma)*reward - utilities[y][x][move_index])
         trial_num += 1
         rewards.append(reward)
 
