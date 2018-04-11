@@ -5,7 +5,7 @@ import sys
 
 def load_board(filename: str = "./input_hw4.csv"):
     board = []
-    with open(filename) as f: 
+    with open(filename) as f:
         reader = csv.reader(f)
         for row in reader:
             board.append(row)
@@ -74,6 +74,7 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
         trial_complete = False
         reward = 0
 
+        first_move = True
         while not trial_complete:
             prev_x = x
             prev_y = y
@@ -91,7 +92,7 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
             elif modifier_likeliness >= 0.8:
                 modifier = 'left'
             elif modifier_likeliness >= 0.7:
-                modifier = 'right' 
+                modifier = 'right'
 
             # stupid and ugly, but whatever
             mod_move = move
@@ -121,14 +122,20 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
                 x, y, cur_reward, trial_complete = move_fun(mod_move, x, y, board, board_width, \
                                                 board_height, give_up_reward, pit_reward, \
                                                 goal_reward, move_reward)
-            move_index = 0
             reward += cur_reward
-            for i in range(len(moves)):
-                if moves[i] == move:
-                    move_index = i
-            utilities[prev_y][prev_x][move_index] += alpha * (reward + gamma*max(utilities[y][x]) - utilities[prev_y][prev_x][move_index])
+            if not first_move:
+                move_index = 0
+                prev_move_index = 0
+                for i in range(len(moves)):
+                    if moves[i] == move:
+                        move_index = i
+                    if moves[i] == prev_move:
+                        prev_move_index = i
+                utilities[prev_y][prev_x][prev_move_index] += alpha * (reward + gamma*utilities[y][x][move_index] - utilities[prev_y][prev_x][prev_move_index])
 
-        # end trial 
+            first_move = False
+
+        # end trial
         trial_num += 1
         rewards.append(reward)
 
@@ -145,7 +152,7 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
 def move_fun(move, x, y, board, board_width, board_height, \
          give_up_reward, pit_reward, goal_reward, move_reward):
     """
-    returns: 
+    returns:
         x, y, trial_complete, reward
     """
     trial_complete = False
