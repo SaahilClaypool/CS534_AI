@@ -125,20 +125,20 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
                                                 board_height, give_up_reward, pit_reward, \
                                                 goal_reward, move_reward, reward)
             # reward += cur_reward
+            move_index = 0
+            prev_move_index = 0
+            for i in range(len(moves)):
+                if moves[i] == move:
+                    move_index = i
+                if moves[i] == prev_move:
+                    prev_move_index = i
             if not first_move:
-                move_index = 0
-                prev_move_index = 0
-                for i in range(len(moves)):
-                    if moves[i] == move:
-                        move_index = i
-                    if moves[i] == prev_move:
-                        prev_move_index = i
                 utilities[prev_y][prev_x][prev_move_index] += alpha * (reward + gamma*utilities[y][x][move_index] - utilities[prev_y][prev_x][prev_move_index])
 
             first_move = False
 
         # end trial
-        utilities[y][x][move_index] += alpha * reward 
+        utilities[y][x][move_index] += alpha * reward
         trial_num += 1
         rewards.append(reward)
 
@@ -205,11 +205,11 @@ def main():
 
     plot(rewards)
 
-def plot(rewards): 
+def plot(rewards):
     offset = 0
     points = []
     group_size = 100
-    while(offset + group_size < len(rewards)): 
+    while(offset + group_size < len(rewards)):
         points.append(sum(rewards[offset: offset + group_size] ) / group_size)
         offset += group_size
     plt.plot(points)
