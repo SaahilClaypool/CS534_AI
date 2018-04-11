@@ -90,30 +90,31 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
                 modifier = 'right' 
 
             # stupid and ugly, but whatever
+            mod_move = move
             if modifier == 'left':
                 if move == 'up':
-                    move = 'left'
+                    mod_move = 'left'
                 elif move == 'right':
-                    move = 'up'
+                    mod_move = 'up'
                 elif move == 'down':
-                    move = 'right'
+                    mod_move = 'right'
                 else:
-                    move = 'down'
+                    mod_move = 'down'
             elif modifier == 'right':
                 if move == 'up':
-                    move = 'right'
+                    mod_move = 'right'
                 elif move == 'right':
-                    move = 'down'
+                    mod_move = 'down'
                 elif move == 'down':
-                    move = 'left'
+                    mod_move = 'left'
                 else:
-                    move = 'up'
+                    mod_move = 'up'
 
-            x, y, reward, trial_complete = move_fun(move, x, y, board, board_width, \
+            x, y, reward, trial_complete = move_fun(mod_move, x, y, board, board_width, \
                                             board_height, give_up_reward, pit_reward, \
                                             goal_reward, move_reward)
             if(modifier == 'double' and not trial_complete):
-                x, y, reward, trial_complete = move_fun(move, x, y, board, board_width, \
+                x, y, reward, trial_complete = move_fun(mod_move, x, y, board, board_width, \
                                                 board_height, give_up_reward, pit_reward, \
                                                 goal_reward, move_reward)
             move_index = 0
