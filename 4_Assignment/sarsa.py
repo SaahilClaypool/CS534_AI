@@ -162,7 +162,6 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
             utilities[y][x][4] += alpha * ((1+gamma)*running_reward - utilities[y][x][4])
         else:
             utilities[y][x][move_index] += alpha * ((1+gamma)*reward - utilities[y][x][move_index])
-        trial_num += 1
         rewards.append(reward)
 
 
