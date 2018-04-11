@@ -1,5 +1,6 @@
 from random import *
 import csv
+import sys
 
 def load_board(filename: str = "./input_hw4.csv"):
     board = []
@@ -55,7 +56,7 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
     moves_smol = ['^', '>', 'v', '<', 'O']
     board_width = len(board[0])
     board_height = len(board)
-    utilities = [[[5 for i in range(len(moves))] for j in range(board_width)] for k in range(board_height)]
+    utilities = [[[0 for i in range(len(moves))] for j in range(board_width)] for k in range(board_height)]
 
     for trial_num in range(num_trials):
         x = randrange(board_width)
@@ -141,7 +142,6 @@ def move_fun(move, x, y, board, board_width, board_height, \
     """
     trial_complete = False
     reward = 0
-    #TODO double movement not implemented here
     # perform movement
     if move == 'up':
         if y != 0:
@@ -173,12 +173,12 @@ def move_fun(move, x, y, board, board_width, board_height, \
     # uh oh SpaghettiOs
 
 def main():
-    goal_reward = 10
-    pit_reward = -5
-    move_reward = -0.1
-    give_up_reward = -3
-    epsilon = 0.1
-    num_trials = 1000
+    goal_reward = float(sys.argv[1])
+    pit_reward = float(sys.argv[2])
+    move_reward = float(sys.argv[3])
+    give_up_reward = float(sys.argv[4])
+    num_trials = int(sys.argv[5])
+    epsilon = float(sys.argv[6])
 
     board = initialize_board()
     trained_utilities = train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, num_trials)
