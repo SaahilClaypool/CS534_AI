@@ -10,7 +10,7 @@ def load_board(filename: str = "./input_hw4.csv"):
     return board
 
 def initialize_board():
-    board = [['X' for i in range(7)] for j in range(6)]
+    board = [['' for i in range(7)] for j in range(6)]
 
     board[2][2] = 'P'
     board[2][3] = 'P'
