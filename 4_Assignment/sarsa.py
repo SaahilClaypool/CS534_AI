@@ -51,7 +51,7 @@ def best_move(utilities, y, x):
 
 
 def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, num_trials):
-    alpha = 0.5
+    alpha = 0.7
     gamma = 0.9
     moves = ['up', 'right', 'down', 'left', 'give-up']
     moves_smol = ['^', '>', 'v', '<', 'G']
@@ -80,11 +80,13 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
         new_y = y
         prev_move = ''
         trial_complete = False
+        prev_reward = 0
         reward = 0
         running_reward = 0
 
         first_move = True
         while not trial_complete:
+            prev_reward = reward
             prev_x = x
             prev_y = y
             x = new_x
@@ -144,7 +146,9 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
                 if moves[i] == prev_move:
                     prev_move_index = i
             if not first_move:
-                utilities[prev_y][prev_x][prev_move_index] += alpha * (reward + gamma*utilities[y][x][move_index] - utilities[prev_y][prev_x][prev_move_index])
+                #TODO: changed to using "prev_reward" in here, since it feels like the reward computed in here should be
+                # the reward that you got from prev_position's movement
+                utilities[prev_y][prev_x][prev_move_index] += alpha * (prev_reward + gamma*utilities[y][x][move_index] - utilities[prev_y][prev_x][prev_move_index])
 
             first_move = False
 
@@ -154,12 +158,18 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
             if moves[i] == move:
                 move_index = i
         if move == 'give-up':
+            #TODO: reward or running_reward?
             utilities[y][x][4] += alpha * ((1+gamma)*running_reward - utilities[y][x][4])
         else:
             utilities[y][x][move_index] += alpha * ((1+gamma)*reward - utilities[y][x][move_index])
         trial_num += 1
         rewards.append(reward)
 
+
+    for y in range(board_height):
+        for x in range(board_width):
+            print(utilities[y][x], end=" ")
+        print("")
     for y in range(board_height):
         for x in range(board_width):
             if board[y][x] != 'O' and board[y][x] != 'P':
