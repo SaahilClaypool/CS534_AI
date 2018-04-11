@@ -213,7 +213,7 @@ def move_fun(move, x, y, board, board_width, board_height, \
         trial_complete = True
 
     if move != 'give-up':
-        reward = move_reward
+        reward += move_reward
     return x, y, reward, trial_complete
     # uh oh SpaghettiOs
 
