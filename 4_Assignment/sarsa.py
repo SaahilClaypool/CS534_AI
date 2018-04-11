@@ -1,5 +1,6 @@
 from random import *
 import csv
+import sys
 
 def load_board(filename: str = "./input_hw4.csv"):
     board = []
@@ -20,7 +21,7 @@ def initialize_board():
     board[4][3] = 'P'
     board[4][4] = 'P'
 
-    board[3][2] = 'G'
+    board[3][2] = 'O'
 
     return board
 
@@ -52,17 +53,17 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
     alpha = 0.5
     gamma = 0.1
     moves = ['up', 'right', 'down', 'left', 'give-up']
-    moves_smol = ['^', '>', 'v', '<', 'O']
+    moves_smol = ['^', '>', 'v', '<', 'G']
     board_width = len(board[0])
     board_height = len(board)
-    utilities = [[[5 for i in range(len(moves))] for j in range(board_width)] for k in range(board_height)]
+    utilities = [[[0 for i in range(len(moves))] for j in range(board_width)] for k in range(board_height)]
 
     rewards = []
     trial_num = 0
     for trial_num in range(num_trials):
         x = randrange(board_width)
         y = randrange(board_height)
-        while board[y][x] == "G" or board[y][x] == "P":
+        while board[y][x] == 'O' or board[y][x] == "P":
             x = randrange(board_width)
             y = randrange(board_height)
         move = ''
@@ -132,7 +133,7 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
 
     for y in range(board_height):
         for x in range(board_width):
-            if board[y][x] != 'G' and board[y][x] != 'P':
+            if board[y][x] != 'O' and board[y][x] != 'P':
                 maxind = utilities[y][x].index(max(utilities[y][x]))
                 print(moves_smol[maxind], end = " ")
             else:
@@ -148,7 +149,6 @@ def move_fun(move, x, y, board, board_width, board_height, \
     """
     trial_complete = False
     reward = 0
-    #TODO double movement not implemented here
     # perform movement
     if move == 'up':
         if y != 0:
@@ -171,7 +171,7 @@ def move_fun(move, x, y, board, board_width, board_height, \
     if board[y][x] == 'P':
         reward = pit_reward
         trial_complete = True
-    elif board[y][x] == 'G':
+    elif board[y][x] == 'O':
         reward = goal_reward
         trial_complete = True
     else:
@@ -180,13 +180,12 @@ def move_fun(move, x, y, board, board_width, board_height, \
     # uh oh SpaghettiOs
 
 def main():
-    goal_reward = 100
-    pit_reward = -100
-    move_reward = -1
-    give_up_reward = -100
-    # epsilon = 0.1
-    epsilon = 0.0
-    num_trials = 1000000
+    goal_reward = float(sys.argv[1])
+    pit_reward = float(sys.argv[2])
+    move_reward = float(sys.argv[3])
+    give_up_reward = float(sys.argv[4])
+    num_trials = int(sys.argv[5])
+    epsilon = float(sys.argv[6])
 
     board = initialize_board()
     trained_utilities, rewards = train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, num_trials)
