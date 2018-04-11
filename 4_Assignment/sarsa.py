@@ -21,7 +21,7 @@ def initialize_board():
     board[4][3] = 'P'
     board[4][4] = 'P'
 
-    board[3][2] = 'G'
+    board[3][2] = 'O'
 
     return board
 
@@ -53,7 +53,7 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
     alpha = 0.5
     gamma = 0.9
     moves = ['up', 'right', 'down', 'left', 'give-up']
-    moves_smol = ['^', '>', 'v', '<', 'O']
+    moves_smol = ['^', '>', 'v', '<', 'G']
     board_width = len(board[0])
     board_height = len(board)
     utilities = [[[0 for i in range(len(moves))] for j in range(board_width)] for k in range(board_height)]
@@ -61,7 +61,7 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
     for trial_num in range(num_trials):
         x = randrange(board_width)
         y = randrange(board_height)
-        while board[y][x] == "G" or board[y][x] == "P":
+        while board[y][x] == 'O' or board[y][x] == "P":
             x = randrange(board_width)
             y = randrange(board_height)
         move = ''
@@ -126,7 +126,7 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
 
     for y in range(board_height):
         for x in range(board_width):
-            if board[y][x] != 'G' and board[y][x] != 'P':
+            if board[y][x] != 'O' and board[y][x] != 'P':
                 maxind = utilities[y][x].index(max(utilities[y][x]))
                 print(moves_smol[maxind], end = " ")
             else:
@@ -164,7 +164,7 @@ def move_fun(move, x, y, board, board_width, board_height, \
     if board[y][x] == 'P':
         reward = pit_reward
         trial_complete = True
-    elif board[y][x] == 'G':
+    elif board[y][x] == 'O':
         reward = goal_reward
         trial_complete = True
     else:
