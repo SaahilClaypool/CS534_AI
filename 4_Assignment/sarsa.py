@@ -49,10 +49,13 @@ def best_move(utilities, y, x):
 
 
 def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, num_trials):
+    alpha = 0.5
+    gamma = 0.9
     moves = ['up', 'right', 'down', 'left', 'give-up']
+    moves_smol = ['^', '>', 'v', '<', 'O']
     board_width = len(board[0])
     board_height = len(board)
-    utilities = [[[99 for i in range(len(moves))] for j in range(board_width)] for k in range(board_height)]
+    utilities = [[[5 for i in range(len(moves))] for j in range(board_width)] for k in range(board_height)]
 
     for trial_num in range(num_trials):
         x = randrange(board_width)
@@ -76,10 +79,6 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
                 move = moves[randrange(5)]
             else:
                 move = best_move(utilities, y, x)
-
-            if move == 'give-up':
-                reward = give_up_reward
-                trial_complete = True
 
             modifier = 'none'
             modifier_likeliness = random()
@@ -125,6 +124,10 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
                 if x != 0:
                     x -= 1
 
+            if move == 'give-up':
+                reward = give_up_reward
+                trial_complete = True
+
             # check current state after move
             if board[y][x] == 'P':
                 reward = pit_reward
@@ -134,19 +137,31 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
                 trial_complete = True
             else:
                 reward = move_reward
+            # uh oh SpaghettiOs
+            move_index = 0
+            for i in range(len(moves)):
+                if moves[i] == move:
+                    move_index = i
+            utilities[prev_y][prev_x][move_index] += alpha * (reward + gamma*max(utilities[y][x]) - utilities[prev_y][prev_x][move_index])
 
     for y in range(board_height):
-        print(board[y][:])
+        for x in range(board_width):
+            if board[y][x] != 'G' and board[y][x] != 'P':
+                maxind = utilities[y][x].index(max(utilities[y][x]))
+                print(moves_smol[maxind], end = " ")
+            else:
+                print(board[y][x], end = " ")
+        print("")
     return utilities
 
 
 def main():
-    goal_reward = 5
+    goal_reward = 10
     pit_reward = -5
     move_reward = -0.1
     give_up_reward = -3
     epsilon = 0.1
-    num_trials = 10
+    num_trials = 1000
 
     board = initialize_board()
     trained_utilities = train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, num_trials)
