@@ -170,11 +170,10 @@ def move_fun(move, x, y, board, board_width, board_height, \
     elif move == 'down':
         if y != board_height - 1:
             y += 1
-    else:
+    elif move == 'left':
         if x != 0:
             x -= 1
-
-    if move == 'give-up':
+    elif move == 'give-up':
         reward += give_up_reward
         trial_complete = True
 
@@ -203,7 +202,7 @@ def main():
     board = load_board()
     trained_utilities, rewards = train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, num_trials)
 
-    plot(rewards)
+    # plot(rewards)
 
 def plot(rewards):
     offset = 0
