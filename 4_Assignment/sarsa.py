@@ -1,7 +1,17 @@
-from random import randrange
+from random import *
+import csv
+
+def load_board(filename: str = "./input_hw4.csv"):
+    board = []
+    with open(filename) as f: 
+        reader = csv.reader(f)
+        for row in reader:
+            board.append(row)
+    return board
+
 
 def initialize_board():
-    board = [['X' for i in range(6)] for j in range(6)]
+    board = [['' for i in range(6)] for j in range(6)]
 
     board[2][2] = 'P'
     board[3][2] = 'P'
@@ -43,8 +53,7 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
     moves = ['up', 'right', 'down', 'left', 'give-up']
     board_width = len(board)
     board_height = len(board[0])
-    utilities = [[[99 for i in range(len(moves))] for j in range(board_height)] for k in range(board_width)
-
+    utilities = [[[99 for i in range(len(moves))] for j in range(board_height)] for k in range(board_width)]
     for trial_num in range(num_trials):
         x = randrange(board_width)
         y = randrange(board_height)
