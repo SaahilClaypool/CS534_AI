@@ -1,4 +1,5 @@
 from random import *
+import matplotlib.pyplot as plt
 import csv
 import sys
 
@@ -190,9 +191,17 @@ def main():
     board = initialize_board()
     trained_utilities, rewards = train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, num_trials)
 
-    print(sum(rewards[:100]) / 100)
-    print(sum(rewards[500:1000]) / 500)
-    print(sum(rewards) / len(rewards))
+    plot(rewards)
+
+def plot(rewards): 
+    offset = 0
+    points = []
+    group_size = 500
+    while(offset + group_size < len(rewards)): 
+        points.append(sum(rewards[offset: offset + group_size] ) / group_size)
+        offset += group_size
+    plt.plot(points)
+    plt.show()
 
 
 if __name__ == "__main__":
