@@ -51,8 +51,9 @@ def best_move(utilities, y, x):
 
 
 def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, num_trials):
-    alpha = 0.7
+    alpha = 0.01
     gamma = 0.9
+    decreasing_epsilon = epsilon
     moves = ['up', 'right', 'down', 'left', 'give-up']
     moves_smol = ['^', '>', 'v', '<', 'G']
     board_width = len(board[0])
@@ -66,8 +67,8 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
                 utilities[row][col] = [pit_reward for i in range(len(moves))]
 
     rewards = []
-    trial_num = 0
     for trial_num in range(num_trials):
+        decreasing_epsilon = epsilon * ((num_trials - trial_num) / num_trials)
         x = randrange(board_width)
         y = randrange(board_height)
         while board[y][x] == 'O' or board[y][x] == "P":
@@ -93,7 +94,7 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
             y = new_y
             prev_move = move
 
-            if random() < epsilon:
+            if random() < decreasing_epsilon:
                 move = moves[randrange(5)]
             else:
                 move = best_move(utilities, y, x)
