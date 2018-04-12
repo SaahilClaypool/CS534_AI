@@ -3,7 +3,11 @@ import matplotlib.pyplot as plt
 import csv
 import sys
 
+
 def load_board(filename: str = "./input_hw4.csv"):
+    """
+    Set up initial board based on input file
+    """
     board = []
     with open(filename) as f:
         reader = csv.reader(f)
@@ -11,23 +15,11 @@ def load_board(filename: str = "./input_hw4.csv"):
             board.append(row)
     return board
 
-def initialize_board():
-    board = [['' for i in range(7)] for j in range(6)]
-
-    board[2][2] = 'P'
-    board[2][3] = 'P'
-    board[3][1] = 'P'
-    board[3][5] = 'P'
-    board[4][2] = 'P'
-    board[4][3] = 'P'
-    board[4][4] = 'P'
-
-    board[3][2] = 'O'
-
-    return board
-
 
 def best_move(utilities, y, x):
+    """
+    Compute the best move to take for a given row/column in from the current utilities
+    """
     max_utility = utilities[y][x][0]
     move = 'up'
 
@@ -44,18 +36,26 @@ def best_move(utilities, y, x):
         move = 'left'
 
     if utilities[y][x][4] > max_utility:
-        max_utility = utilities[y][x][4]
         move = 'give-up'
 
     return move
 
 
 def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, num_trials):
+    """
+    Train an agent using SARSA to generate utilities for a given board with various settings.
+
+    Output is a utility matrix where each [row][col] has an associated list of expected reward for each move.
+    """
+    # step size
     alpha = 0.1
+    # influence of next state/action's utility
     gamma = 0.9
-    decreasing_epsilon = epsilon
+
     moves = ['up', 'right', 'down', 'left', 'give-up']
     moves_smol = ['^', '>', 'v', '<', 'G']
+
+    # initialize utility values
     board_width = len(board[0])
     board_height = len(board)
     utilities = [[[0 for i in range(len(moves))] for j in range(board_width)] for k in range(board_height)]
@@ -66,29 +66,33 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
             elif board[row][col] == 'P':
                 utilities[row][col] = [pit_reward for i in range(len(moves))]
 
+    # rewards will be used to track the average reward from the trials - mostly for visualization & analysis
     rewards = []
+
+    # run through trials
     for trial_num in range(num_trials):
+        # slowly decrease epsilon so that the agent doesn't keep exploring forever
         decreasing_epsilon = epsilon * ((num_trials - trial_num) / num_trials)
+
+        # randomly intialize initial x y locatoin
         x = randrange(board_width)
         y = randrange(board_height)
         while board[y][x] == 'O' or board[y][x] == "P":
             x = randrange(board_width)
             y = randrange(board_height)
         move = ''
-        prev_x = x
-        prev_y = y
         new_x = x
         new_y = y
-        prev_move = ''
         trial_complete = False
-        prev_reward = 0
         reward = 0
         running_reward = 0
         max_moves = 100
 
         first_move = True
+        # run trial until goal reached, pit reached, given up, or maximum moves has been reached
         while not trial_complete and max_moves > 0:
             max_moves -= 1
+            # keep track of previous positions/rewards
             prev_reward = reward
             prev_x = x
             prev_y = y
@@ -97,10 +101,14 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
             prev_move = move
 
             if random() < decreasing_epsilon:
+                # random exploration
                 move = moves[randrange(5)]
             else:
+                # choose current best move
                 move = best_move(utilities, y, x)
 
+            # check by random chance whether or not to cause the agent to take a modified move
+            # 10% chance each of turning right, left, or taking a double move
             modifier = 'none'
             modifier_likeliness = random()
             if modifier_likeliness >= 0.9:
@@ -110,7 +118,7 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
             elif modifier_likeliness >= 0.7:
                 modifier = 'right'
 
-            # stupid and ugly, but whatever
+            # modify the original chosen movement, if applicable.
             mod_move = move
             if modifier == 'left':
                 if move == 'up':
@@ -133,26 +141,31 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
             if move == 'give-up':
                 mod_move = 'give-up'
 
-            new_x, new_y, reward, trial_complete = move_fun(mod_move, x, y, board, board_width, \
-                                            board_height, give_up_reward, pit_reward, \
-                                            goal_reward, move_reward, reward)
-            if(modifier == 'double' and not trial_complete):
-                new_x, new_y, reward, trial_complete = move_fun(mod_move, new_x, new_y, board, board_width, \
-                                                board_height, give_up_reward, pit_reward, \
-                                                goal_reward, move_reward, reward)
+            # apply movement for the chosen (and possibly modified) movement to get the new position and reward
+            new_x, new_y, reward, trial_complete = move_fun(mod_move, x, y, board, board_width,
+                                                            board_height, give_up_reward, pit_reward,
+                                                            goal_reward, move_reward, reward)
+            # special case if a double move modifier was applied
+            if modifier == 'double' and not trial_complete:
+                new_x, new_y, reward, trial_complete = move_fun(mod_move, new_x, new_y, board, board_width,
+                                                                board_height, give_up_reward, pit_reward,
+                                                                goal_reward, move_reward, reward)
+            # add on to the running reward, for the case of giving up
             running_reward += reward
+
             move_index = 0
             prev_move_index = 0
+            # get the index of current and previous move
             for i in range(len(moves)):
                 if moves[i] == move:
                     move_index = i
                 if moves[i] == prev_move:
                     prev_move_index = i
             if not first_move:
-                #TODO: changed to using "prev_reward" in here, since it feels like the reward computed in here should be
-                # the reward that you got from prev_position's movement
-                utilities[prev_y][prev_x][prev_move_index] += alpha * (prev_reward + gamma*utilities[y][x][move_index] - utilities[prev_y][prev_x][prev_move_index])
-
+                # for the previous state/action, update based on the reward it got and the next state/action's utility
+                utilities[prev_y][prev_x][prev_move_index] += alpha * (
+                        prev_reward + gamma * utilities[y][x][move_index] -
+                        utilities[prev_y][prev_x][prev_move_index])
             first_move = False
 
         # end trial
@@ -160,30 +173,33 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
         for i in range(len(moves)):
             if moves[i] == move:
                 move_index = i
+        # final update for moves that ended the trial, i.e. gave up, got to goal, or went into pit
         if move == 'give-up':
-            #TODO: reward or running_reward?
-            utilities[y][x][4] += alpha * ((1+gamma)*running_reward - utilities[y][x][4])
+            utilities[y][x][4] += alpha * ((1 + gamma) * running_reward - utilities[y][x][4])
         else:
-            utilities[y][x][move_index] += alpha * ((1+gamma)*reward - utilities[y][x][move_index])
+            utilities[y][x][move_index] += alpha * ((1 + gamma) * reward - utilities[y][x][move_index])
         rewards.append(reward)
 
-
-    for y in range(board_height):
-        for x in range(board_width):
-            print(utilities[y][x], end=" ")
-        print("")
+    # Agent finished training: print out results
+    print("Computed best moves for the agent:")
     for y in range(board_height):
         for x in range(board_width):
             if board[y][x] != 'O' and board[y][x] != 'P':
                 maxind = utilities[y][x].index(max(utilities[y][x]))
-                print(moves_smol[maxind], end = " ")
+                print(moves_smol[maxind], end=" ")
             else:
-                print(board[y][x], end = " ")
+                print(board[y][x], end=" ")
+        print("")
+    print("Expected rewards for moves:")
+    for y in range(board_height):
+        for x in range(board_width):
+            print("{:+.6f}".format(max(utilities[y][x])), end=" ")
         print("")
     return utilities, rewards
 
+
 def move_fun(move, x, y, board, board_width, board_height, \
-         give_up_reward, pit_reward, goal_reward, move_reward, reward):
+             give_up_reward, pit_reward, goal_reward, move_reward, reward):
     """
     returns:
         x, y, trial_complete, reward
@@ -218,29 +234,31 @@ def move_fun(move, x, y, board, board_width, board_height, \
     if move != 'give-up':
         reward += move_reward
     return x, y, reward, trial_complete
-    # uh oh SpaghettiOs
+
 
 def main():
+    # get parameters from input
     goal_reward = float(sys.argv[1])
     pit_reward = float(sys.argv[2])
     move_reward = float(sys.argv[3])
     give_up_reward = float(sys.argv[4])
     num_trials = int(sys.argv[5])
     epsilon = float(sys.argv[6])
-    print(goal_reward, pit_reward, give_up_reward, num_trials)
+    print("Goal reward:",goal_reward, " Pit reward:", pit_reward, " Move reward:", move_reward, " Giveup reward:", give_up_reward)
+    print("Running on ", num_trials, " trials with initial epsilon ", epsilon)
 
-    # board = initialize_board()
     board = load_board()
     trained_utilities, rewards = train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, num_trials)
 
     plot(rewards)
 
+
 def plot(rewards):
     offset = 0
     points = []
     group_size = 20
-    while(offset + group_size < len(rewards)):
-        points.append(sum(rewards[offset: offset + group_size] ) / group_size)
+    while (offset + group_size < len(rewards)):
+        points.append(sum(rewards[offset: offset + group_size]) / group_size)
         offset += group_size
     plt.plot(points)
     plt.show()
