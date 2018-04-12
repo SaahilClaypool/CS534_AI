@@ -175,13 +175,33 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
                 move_index = i
         # final update for moves that ended the trial, i.e. gave up, got to goal, or went into pit
         if move == 'give-up':
-            utilities[y][x][4] += alpha * ((1 + gamma) * running_reward - utilities[y][x][4])
+            utilities[y][x][4] += alpha * (gamma * running_reward - utilities[y][x][4])
         else:
-            utilities[y][x][move_index] += alpha * ((1 + gamma) * reward - utilities[y][x][move_index])
+            utilities[y][x][move_index] += alpha * (gamma * reward - utilities[y][x][move_index])
         rewards.append(reward)
 
     # Agent finished training: print out results
-    print("Computed best moves for the agent:")
+    print("Trials completed.")
+    print("")
+
+    print("Computed best moves and expected reward for the agent:")
+    for y in range(board_height):
+        for x in range(board_width):
+            if board[y][x] != 'O' and board[y][x] != 'P':
+                maxind = utilities[y][x].index(max(utilities[y][x]))
+                print("   ", end=" ")
+                print(moves_smol[maxind], end=" ")
+                print("   ", end=" ")
+            else:
+                print("   ", end=" ")
+                print(board[y][x], end=" ")
+                print("   ", end=" ")
+        print("")
+        for x in range(board_width):
+            print("{:+.6f}".format(max(utilities[y][x])), end=" ")
+        print("")
+    print("")
+    print("Best moves:")
     for y in range(board_height):
         for x in range(board_width):
             if board[y][x] != 'O' and board[y][x] != 'P':
@@ -190,6 +210,7 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
             else:
                 print(board[y][x], end=" ")
         print("")
+    print("")
     print("Expected rewards for moves:")
     for y in range(board_height):
         for x in range(board_width):
@@ -198,7 +219,7 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
     return utilities, rewards
 
 
-def move_fun(move, x, y, board, board_width, board_height, \
+def move_fun(move, x, y, board, board_width, board_height,
              give_up_reward, pit_reward, goal_reward, move_reward, reward):
     """
     returns:
@@ -246,6 +267,7 @@ def main():
     epsilon = float(sys.argv[6])
     print("Goal reward:",goal_reward, " Pit reward:", pit_reward, " Move reward:", move_reward, " Giveup reward:", give_up_reward)
     print("Running on ", num_trials, " trials with initial epsilon ", epsilon)
+    print("")
 
     board = load_board()
     trained_utilities, rewards = train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, num_trials)
@@ -257,7 +279,7 @@ def plot(rewards):
     offset = 0
     points = []
     group_size = 20
-    while (offset + group_size < len(rewards)):
+    while offset + group_size < len(rewards):
         points.append(sum(rewards[offset: offset + group_size]) / group_size)
         offset += group_size
     plt.plot(points)
