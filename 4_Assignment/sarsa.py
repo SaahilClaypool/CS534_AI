@@ -51,7 +51,7 @@ def best_move(utilities, y, x):
 
 
 def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, num_trials):
-    alpha = 0.01
+    alpha = 0.1
     gamma = 0.9
     decreasing_epsilon = epsilon
     moves = ['up', 'right', 'down', 'left', 'give-up']
@@ -84,9 +84,11 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
         prev_reward = 0
         reward = 0
         running_reward = 0
+        max_moves = 100
 
         first_move = True
-        while not trial_complete:
+        while not trial_complete and max_moves > 0:
+            max_moves -= 1
             prev_reward = reward
             prev_x = x
             prev_y = y
