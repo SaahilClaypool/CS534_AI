@@ -41,6 +41,79 @@ def best_move(utilities, y, x):
     return move
 
 
+def s_initial_utilities(board, goal_reward, pit_reward, move_reward, give_up_reward, alpha, gamma):
+    """
+    Generate initial utility values for movements.
+    The initial values for the utility function are generated as follows:
+        -The expected reward for giving up is simply initialized to the give_up_reward
+        -For each direction (up/right/down/left), the movement reward is added onto each space from a given position
+        until either the edge of the board or a goal/pit is reached. if a goal/pit is reached, its reward is added.
+    """
+    board_width = len(board[0])
+    board_height = len(board)
+    # scale the rewards based on our alpha/gamma values
+    gr = goal_reward * alpha * gamma
+    pr = pit_reward * alpha * gamma
+    mr = move_reward * alpha * gamma
+    gu = give_up_reward * alpha * gamma
+    utilities = [[[0 for i in range(5)] for j in range(board_width)] for k in range(board_height)]
+
+    for row in range(board_height):
+        for col in range(board_width):
+            if board[row][col] != 'O' and board[row][col] != 'P':
+
+                utils = [0, 0, 0, 0, gu]
+                # go through movements in each direction until a wall, goal, or pit is reached
+                up_move = row - 1
+                down_move = row + 1
+                right_move = col + 1
+                left_move = col - 1
+
+                while up_move >= 0:
+                    if board[up_move][col] == 'P':
+                        utils[0] += pr
+                        up_move = 0
+                    elif board[up_move][col] == 'O':
+                        utils[0] += gr
+                        up_move = 0
+                    else:
+                        utils[0] += mr
+                    up_move -= 1
+                while right_move < board_width:
+                    if board[row][right_move] == 'P':
+                        utils[1] += pr
+                        right_move = board_width
+                    elif board[row][right_move] == 'O':
+                        utils[1] += gr
+                        right_move = board_width
+                    else:
+                        utils[1] += mr
+                    right_move += 1
+                while down_move < board_height:
+                    if board[down_move][col] == 'P':
+                        utils[2] += pr
+                        down_move = board_height
+                    elif board[down_move][col] == 'O':
+                        utils[2] += gr
+                        down_move = board_height
+                    else:
+                        utils[2] += mr
+                    down_move += 1
+                while left_move >= 0:
+                    if board[row][left_move] == 'P':
+                        utils[3] += pr
+                        left_move = 0
+                    elif board[row][left_move] == 'O':
+                        utils[3] += gr
+                        left_move = 0
+                    else:
+                        utils[3] += mr
+                    left_move -= 1
+                utilities[row][col] = utils
+    return utilities
+
+
+
 def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, num_trials):
     """
     Train an agent using SARSA to generate utilities for a given board with various settings.
@@ -58,7 +131,18 @@ def train(board, goal_reward, pit_reward, move_reward, give_up_reward, epsilon, 
     # initialize utility values
     board_width = len(board[0])
     board_height = len(board)
-    utilities = [[[0 for i in range(len(moves))] for j in range(board_width)] for k in range(board_height)]
+    #utilities = [[[0 for i in range(len(moves))] for j in range(board_width)] for k in range(board_height)]
+    utilities = s_initial_utilities(board, goal_reward, pit_reward, move_reward, give_up_reward, alpha, gamma)
+
+    print("Best move policy at initialization:")
+    for y in range(board_height):
+        for x in range(board_width):
+            if board[y][x] != 'O' and board[y][x] != 'P':
+                maxind = utilities[y][x].index(max(utilities[y][x]))
+                print(moves_smol[maxind], end=" ")
+            else:
+                print(board[y][x], end=" ")
+        print("")
     for row in range(board_height):
         for col in range(board_width):
             if board[row][col] == 'O':
