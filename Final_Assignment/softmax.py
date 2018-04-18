@@ -92,7 +92,7 @@ def load_data():
     desired_size = 500
     for _file in dog_files:
         q += 1
-        img = Image.open(folder + "/" + _file).convert('LA')
+        img = Image.open(folder + "/" + _file).convert('L')
         old_size = img.size  # old_size[0] is in (width, height) format
         ratio = float(desired_size) / max(old_size)
         delta_w = desired_size - old_size[0]
@@ -100,9 +100,11 @@ def load_data():
         padding = (delta_w // 2, delta_h // 2, delta_w - (delta_w // 2), delta_h - (delta_h // 2))
         pad_img = ImageOps.expand(img, padding)
         pad_img = pad_img.resize((100, 100), Image.ANTIALIAS)
-
-        data = np.asarray(pad_img, dtype="int32")
-        images = np.append(images, np.array(data[:,:,0].flatten()).reshape((10000,1)), axis=1)
+        #pad_img.show()
+        data = np.asarray(pad_img)
+        images = np.append(images, np.array(data[:,:]).reshape((10000, 1)), axis=1)
+        # recover_image = Image.fromarray(np.array(data[:,:]).reshape((10000, 1)).reshape((100, 100)), 'L')
+        # recover_image.show()
 
         labels_str.append(lab_dict[_file[:-4]])
 
