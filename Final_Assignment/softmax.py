@@ -76,6 +76,8 @@ def load_data():
     labels are converted into one-hot encodings
     """
     folder = "../dog_data/train"
+    desired_size = 500
+    shrink_size = 50
 
     dog_files = [f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
     print("Working with {0} images".format(len(dog_files)))
@@ -85,11 +87,10 @@ def load_data():
         k, v = row
         lab_dict[k] = v
 
-    images = np.empty(shape=(10000, 0))
+    images = np.empty(shape=(shrink_size**2, 0))
     labels_str = []
 
     q = 0
-    desired_size = 500
     for _file in dog_files:
         q += 1
         img = Image.open(folder + "/" + _file).convert('L')
@@ -99,14 +100,16 @@ def load_data():
         delta_h = desired_size - old_size[1]
         padding = (delta_w // 2, delta_h // 2, delta_w - (delta_w // 2), delta_h - (delta_h // 2))
         pad_img = ImageOps.expand(img, padding)
-        pad_img = pad_img.resize((100, 100), Image.ANTIALIAS)
+        pad_img = pad_img.resize((shrink_size, shrink_size), Image.ANTIALIAS)
         #pad_img.show()
         data = np.asarray(pad_img)
-        images = np.append(images, np.array(data[:,:]).reshape((10000, 1)), axis=1)
+
+        images = np.append(images, np.array(data[:,:]).reshape((shrink_size**2, 1)), axis=1)
         # recover_image = Image.fromarray(np.array(data[:,:]).reshape((10000, 1)).reshape((100, 100)), 'L')
         # recover_image.show()
 
         labels_str.append(lab_dict[_file[:-4]])
+        print(q)
 
     images = np.array(images[:])
 
@@ -127,13 +130,21 @@ def show_image(data, width=100, h=100):
     print("shape: " , data.shape)
     leng = data.shape[0]
     data = data.reshape((100,100,))
-    img = Image.fromarray(data, "LA")
+    img = Image.fromarray(data, "L")
     img.save('my.png')
     img.show()
 
 #%% 
 if __name__ == "__main__":
     training_images, training_labels, label_names, dog_files = load_data()
+    # TODO: use proper methods for cross-validation instead of just splitting data like this
+    testing_images = training_images[:, -1222:]
+    testing_labels = training_labels[:, -1222:]
+
+    training_images = training_images[:, :9000]
+    training_labels = training_labels[:, :9000]
+
+    print(training_images.shape, testing_images.shape)
 
     w = soft_max(training_images, training_labels)
     np.savetxt('weights.txt', w, delimiter=",")
@@ -143,6 +154,10 @@ if __name__ == "__main__":
     training_ce = cross_entropy_loss(training_labels, training_y_hat)
     print("Training cross-entropy: ", training_ce)
     print("Training percent correct: ", training_pc)
+
+    testing_y_hat = compute_predictions(testing_images, w)
+    testing_pc = percent_correct(testing_labels, testing_y_hat)
+    print("Testing percent correct: ", testing_pc)
     #
     # testing_y_hat = compute_predictions(testing_images, w)
     # testing_pc = percent_correct(testing_labels, testing_y_hat)
