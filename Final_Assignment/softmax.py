@@ -1,4 +1,5 @@
 # Python 3
+#%%
 import numpy as np
 import os, sys
 from PIL import Image, ImageOps
@@ -90,7 +91,7 @@ def load_data():
     q = 0
     desired_size = 500
     for _file in dog_files:
-        #q += 1
+        q += 1
         img = Image.open(folder + "/" + _file).convert('LA')
         old_size = img.size  # old_size[0] is in (width, height) format
         ratio = float(desired_size) / max(old_size)
@@ -104,7 +105,6 @@ def load_data():
         images = np.append(images, np.array(data[:,:,0].flatten()).reshape((10000,1)), axis=1)
 
         labels_str.append(lab_dict[_file[:-4]])
-        print(q)
 
     images = np.array(images[:])
 
@@ -114,11 +114,24 @@ def load_data():
     for l in labels_str:
         one_hot_labels = np.append(one_hot_labels, np.where(l == unique_labels, 1, 0).reshape((unique_labels.shape[0], 1)), axis=1)
     print(images.shape, one_hot_labels.shape, unique_labels.shape)
-    return images, one_hot_labels, unique_labels
+    return images, one_hot_labels, unique_labels, dog_files
 
+def onehot_to_name(y_hat, label_names):
+    print(y_hat.shape)
+    idx = np.argmax(y_hat)
+    return label_names[idx]
 
+def show_image(data, width=100, h=100):
+    print("shape: " , data.shape)
+    leng = data.shape[0]
+    data = data.reshape((100,100,))
+    img = Image.fromarray(data, "LA")
+    img.save('my.png')
+    img.show()
+
+#%% 
 if __name__ == "__main__":
-    training_images, training_labels, label_names = load_data()
+    training_images, training_labels, label_names, dog_files = load_data()
 
     w = soft_max(training_images, training_labels)
     np.savetxt('weights.txt', w, delimiter=",")
@@ -134,3 +147,10 @@ if __name__ == "__main__":
     # testing_ce = cross_entropy_loss(testing_labels, testing_y_hat)
     # print("Testing cross-entropy: ", testing_ce)
     # print("Testing percent correct: ", testing_pc)
+
+#%%  Print the best doggo
+# el = training_y_hat[:, 0].T
+# onehot_to_name(el, label_names)
+# show_image('../dog_data/train/000bec180eb18c7604dcecc8fe0dba07.jpg')
+# training_images.shape
+# dog_files[0]
