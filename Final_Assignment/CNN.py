@@ -4,10 +4,12 @@ import numpy as np
 import os, sys
 from PIL import Image, ImageOps
 import csv
+import keras
 from keras.models import Sequential
-from keras.layers import Dense, Activation, LSTM, Dropout, BatchNormalization
+from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Activation, LSTM, Dropout, BatchNormalization
 from keras.optimizers import  sgd
 from keras.utils import to_categorical
+from keras import metrics
 
 def percent_correct(y, y_hat):
     # compute percent correct by first converting y_hat into a one-hot vector
@@ -40,7 +42,7 @@ def load_data(desired_size, shrink_size):
         k, v = row
         lab_dict[k] = v
 
-    images = np.empty(shape=(shrink_size**2, 0))
+    images = np.empty(shape=(0, 1, shrink_size, shrink_size))
     labels_str = []
 
     q = 0
@@ -56,15 +58,15 @@ def load_data(desired_size, shrink_size):
         pad_img = pad_img.resize((shrink_size, shrink_size), Image.ANTIALIAS)
         #pad_img.show()
         data = np.asarray(pad_img)
-
         # images = np.append(images, np.array(data[:,:])) # Leave images as 50 x 50
-        images = np.append(images, np.array(data[:,:]).reshape((shrink_size**2, 1)), axis=1)
+        im = np.array(data[:,:]).reshape((1, 1, shrink_size, shrink_size))
+        images = np.append(images, im, axis=0)
         # recover_image = Image.fromarray(np.array(data[:,:]).reshape((10000, 1)).reshape((100, 100)), 'L')
         # recover_image.show()
 
         labels_str.append(lab_dict[_file[:-4]])
         print(q)
-        if q > 200:
+        if q > 1000:
            break
 
     print(images.shape)
@@ -86,6 +88,7 @@ def onehot_to_name(y_hat, label_names):
 if __name__ == "__main__":
     desired_size = 500
     shrink_size = 50
+    # Images are now 1 x 50 x 50 so each row is an image
     training_images, training_labels, label_names, dog_files = load_data(desired_size, shrink_size)
     # TODO: use proper methods for cross-validation instead of just splitting data like this
     # testing_images = training_images[:, -1222:]
@@ -100,9 +103,49 @@ if __name__ == "__main__":
     # testing_labels = testing_labels.T
 
     print("Initializing Classifier")
+    img_rows, img_cols = 50, 50
+    input_shape = (1, img_rows, img_cols)
+    droprate = 0.1
+    num_classes = label_names.shape[0]
+    filter_pixel = 3 # I believe this is the sub matrix that we are using to identify features. 
 
     # I don't really know what i'm doing here. hurr durr more layers more things
-    # classifier = Sequential()
+    classifier = Sequential()
+    classifier.add(Conv2D(64, kernel_size=(filter_pixel, filter_pixel),
+        padding="same", activation="relu", 
+        input_shape=input_shape))
+    classifier.add(BatchNormalization())
+    classifier.add(Dropout(droprate))
+
+    # layer 2
+    classifier.add(Conv2D(64, kernel_size=(filter_pixel, filter_pixel), activation="relu", border_mode="same"))
+    classifier.add(BatchNormalization())
+    # classifier.add(MaxPooling2D()) # causes error?
+    classifier.add(Dropout(droprate))#3
+
+    # fully connected layer
+    classifier.add(Flatten())
+    classifier.add(Dense(500, use_bias=False))
+    classifier.add(BatchNormalization())
+    classifier.add(Activation('relu'))
+    classifier.add(Dropout(droprate))
+
+    # Fully connected final layer
+    classifier.add(Dense(num_classes))
+
+    classifier.compile(loss=keras.losses.categorical_crossentropy,
+                optimizer=keras.optimizers.RMSprop(),
+                metrics=[metrics.categorical_accuracy])
+
+    classifier.summary()
+    history = classifier.fit(training_images, training_labels.T,
+            batch_size=200,
+            epochs=100,
+            verbose=1,
+            validation_data=(training_images, training_labels.T),shuffle=True)
+            # callbacks=callbacks)
+    print("fit done")
+
     # classifier.add(Dense(1024, activation='relu', input_dim=shrink_size**2))
     # classifier.add(BatchNormalization())
     # classifier.add(Dropout(0.1))
@@ -122,8 +165,8 @@ if __name__ == "__main__":
     # classifier.fit(x=training_images, y=training_labels, epochs=5000, batch_size=512)
     # print("Fit completed")
 
-    # training_pc = classifier.evaluate(x=training_images, y=training_labels, batch_size=128)
-    # print("Training percent correct: ", training_pc)
+    training_pc = classifier.evaluate(x=training_images, y=training_labels.T, batch_size=128)
+    print("Training percent correct: ", training_pc[1])
 
     # testing_pc = classifier.evaluate(x=testing_images, y=testing_labels, batch_size=128)
     # print("Testing percent correct: ", testing_pc)
