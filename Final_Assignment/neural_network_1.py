@@ -4,7 +4,7 @@ import numpy as np
 import os, sys
 from PIL import Image, ImageOps
 import csv
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import Dense, Activation, LSTM, Dropout, BatchNormalization
 from keras.optimizers import  sgd
 from keras.utils import to_categorical
@@ -63,8 +63,6 @@ def load_data(desired_size, shrink_size):
 
         labels_str.append(lab_dict[_file[:-4]])
         print(q)
-        #if q > 1499:
-        #    break
 
     images = np.array(images[:])
 
@@ -100,25 +98,29 @@ if __name__ == "__main__":
 
     print("Initializing Classifier")
 
+
     # I don't really know what i'm doing here. hurr durr more layers more things
-    classifier = Sequential()
-    classifier.add(Dense(1024, activation='relu', input_dim=shrink_size**2))
-    classifier.add(BatchNormalization())
-    classifier.add(Dropout(0.1))
-    classifier.add(Dense(512, activation='relu'))
-    classifier.add(BatchNormalization())
-    classifier.add(Dropout(0.1))
-    classifier.add(Dense(512, activation='relu'))
-    classifier.add(BatchNormalization())
-    classifier.add(Dropout(0.1))
-    classifier.add(Dense(256, activation='relu'))
-    classifier.add(BatchNormalization())
-    classifier.add(Dropout(0.1))
-    classifier.add(Dense(label_names.size, activation='softmax'))
-    classifier.compile(optimizer=sgd(lr=0.00002, decay=1e-6, momentum=0.9, nesterov=True),
-                       loss='categorical_crossentropy',
-                       metrics=['accuracy'])
-    classifier.fit(x=training_images, y=training_labels, epochs=5000, batch_size=512)
+    classifier = load_model('saved_models/nn1_13')
+    # classifier = Sequential()
+    # classifier.add(Dense(512, activation='relu', input_dim=shrink_size**2))
+    # classifier.add(BatchNormalization())
+    # classifier.add(Dropout(0.1))
+    # classifier.add(Dense(512, activation='relu'))
+    # classifier.add(BatchNormalization())
+    # classifier.add(Dropout(0.1))
+    # classifier.add(Dense(512, activation='relu'))
+    # classifier.add(BatchNormalization())
+    # classifier.add(Dropout(0.1))
+    # classifier.add(Dense(256, activation='relu'))
+    # classifier.add(BatchNormalization())
+    # classifier.add(Dropout(0.1))
+    # classifier.add(Dense(label_names.size, activation='softmax'))
+    # classifier.compile(optimizer=sgd(lr=0.00002, decay=1e-6, momentum=0.9, nesterov=True),
+    #                    loss='categorical_crossentropy',
+    #                    metrics=['accuracy'])
+    #for t in range(50):
+    #    classifier.fit(x=training_images, y=training_labels, epochs=1000, batch_size=512)
+    #    classifier.save("saved_models/nn1_"+str(t))
     print("Fit completed")
 
     training_pc = classifier.evaluate(x=training_images, y=training_labels, batch_size=128)
@@ -126,3 +128,4 @@ if __name__ == "__main__":
 
     testing_pc = classifier.evaluate(x=testing_images, y=testing_labels, batch_size=128)
     print("Testing percent correct: ", testing_pc)
+
