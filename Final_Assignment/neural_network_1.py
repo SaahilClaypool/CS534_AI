@@ -82,7 +82,7 @@ def onehot_to_name(y_hat, label_names):
 #%%
 if __name__ == "__main__":
     desired_size = 500
-    shrink_size = 50
+    shrink_size = 100
     training_images, training_labels, label_names, dog_files = load_data(desired_size, shrink_size)
     # TODO: use proper methods for cross-validation instead of just splitting data like this
     testing_images = training_images[:, -1222:]
@@ -100,27 +100,18 @@ if __name__ == "__main__":
 
 
     # I don't really know what i'm doing here. hurr durr more layers more things
-    classifier = load_model('saved_models/nn1_13')
+    classifier = load_model('saved_models/nn4_0')
     # classifier = Sequential()
-    # classifier.add(Dense(512, activation='relu', input_dim=shrink_size**2))
+    # classifier.add(Dense(30, activation='relu',input_dim=shrink_size**2))
+    # classifier.add(Dropout(0.5))
     # classifier.add(BatchNormalization())
-    # classifier.add(Dropout(0.1))
-    # classifier.add(Dense(512, activation='relu'))
-    # classifier.add(BatchNormalization())
-    # classifier.add(Dropout(0.1))
-    # classifier.add(Dense(512, activation='relu'))
-    # classifier.add(BatchNormalization())
-    # classifier.add(Dropout(0.1))
-    # classifier.add(Dense(256, activation='relu'))
-    # classifier.add(BatchNormalization())
-    # classifier.add(Dropout(0.1))
     # classifier.add(Dense(label_names.size, activation='softmax'))
-    # classifier.compile(optimizer=sgd(lr=0.00002, decay=1e-6, momentum=0.9, nesterov=True),
+    # classifier.compile(optimizer=sgd(lr=0.0002, decay=1e-6, momentum=0.9, nesterov=True),
     #                    loss='categorical_crossentropy',
     #                    metrics=['accuracy'])
-    #for t in range(50):
+    # for t in range(3):
     #    classifier.fit(x=training_images, y=training_labels, epochs=1000, batch_size=512)
-    #    classifier.save("saved_models/nn1_"+str(t))
+    #    classifier.save("saved_models/nn4_"+str(t))
     print("Fit completed")
 
     training_pc = classifier.evaluate(x=training_images, y=training_labels, batch_size=128)
