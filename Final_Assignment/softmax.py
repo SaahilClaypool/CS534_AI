@@ -8,7 +8,7 @@ import csv
 def percent_correct(y, y_hat):
     # compute percent correct by first converting y_hat into a one-hot vector
     one_hot_y_hat = np.where(y_hat == y_hat.max(axis=0)[None, :], 1, 0)
-    return np.mean(np.where(y == one_hot_y_hat, 1, 0))
+    return np.mean(np.where(np.argmax(y, axis=0) == np.argmax(one_hot_y_hat, axis=0), 1, 0))
 
 
 def cross_entropy_loss(y, y_hat):
@@ -138,16 +138,16 @@ def show_image(data, width=100, h=100):
 if __name__ == "__main__":
     training_images, training_labels, label_names, dog_files = load_data()
     # TODO: use proper methods for cross-validation instead of just splitting data like this
-    testing_images = training_images[:, -1222:]
-    testing_labels = training_labels[:, -1222:]
+    testing_images = training_images[:, -2222:]
+    testing_labels = training_labels[:, -2222:]
 
-    training_images = training_images[:, :9000]
-    training_labels = training_labels[:, :9000]
+    training_images = training_images[:, :8000]
+    training_labels = training_labels[:, :8000]
 
     print(training_images.shape, testing_images.shape)
 
     w = soft_max(training_images, training_labels)
-    np.savetxt('weights.txt', w, delimiter=",")
+    np.savetxt('weights82.txt', w, delimiter=",")
 
     training_y_hat = compute_predictions(training_images, w)
     training_pc = percent_correct(training_labels, training_y_hat)
