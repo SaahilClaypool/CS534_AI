@@ -1,162 +1,110 @@
-# Python 3
+# https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html
 #%%
-import numpy as np
+from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
+from keras import optimizers
 import os, sys
-from PIL import Image, ImageOps
 import csv
-import keras
-from keras.models import Sequential, Model
-from keras.layers import GlobalAveragePooling2D, Conv2D, MaxPooling2D, Flatten, Dense, Activation, LSTM, Dropout, BatchNormalization, Input
-from keras.optimizers import  sgd
-from keras.utils import to_categorical
-from keras.callbacks import ModelCheckpoint, EarlyStopping
-from keras import metrics
-from keras import backend as K
-from keras.applications.inception_v3 import InceptionV3
+import numpy as np
 
 
-def percent_correct(y, y_hat):
-    # compute percent correct by first converting y_hat into a one-hot vector
-    one_hot_y_hat = np.where(y_hat == y_hat.max(axis=0)[None, :], 1, 0)
-    return np.mean(np.where(y == one_hot_y_hat, 1, 0))
-
-# define path to save model
-
-
-def compute_predictions(x, w):
-    # first compute preactivation vectors
-    z = compute_preactivation(x, w)
-    z_sum = np.sum(np.exp(z), axis=0)
-    # normalize
-    y_hat = np.exp(z) / z_sum
-    return y_hat
-
-
-def load_data(desired_size, shrink_size):
-    """
-    Load images and labels in as column vectors.
-    labels are converted into one-hot encodings
-    """
-    folder = "../dog_data/train"
-
-    dog_files = [f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
-    print("Working with {0} images".format(len(dog_files)))
+im_size = 256
+def load_labels():
     label_reader = csv.reader(open('../dog_data/labels.csv', 'r'))
     lab_dict = {}
     for row in label_reader:
         k, v = row
         lab_dict[k] = v
-
-    images = np.empty(shape=(0, 1, shrink_size, shrink_size))
+    folder = "../dog_data/train"
+    dog_files = [f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
+    print("Working with {0} images".format(len(dog_files)))
     labels_str = []
-
+    f = -1
+    X = -1
     q = 0
     for _file in dog_files:
         q += 1
-        img = Image.open(folder + "/" + _file).convert('L')
-        old_size = img.size  # old_size[0] is in (width, height) format
-        ratio = float(desired_size) / max(old_size)
-        delta_w = desired_size - old_size[0]
-        delta_h = desired_size - old_size[1]
-        padding = (delta_w // 2, delta_h // 2, delta_w - (delta_w // 2), delta_h - (delta_h // 2))
-        pad_img = ImageOps.expand(img, padding)
-        pad_img = pad_img.resize((shrink_size, shrink_size), Image.ANTIALIAS)
-        #pad_img.show()
-        data = np.asarray(pad_img)
-        # images = np.append(images, np.array(data[:,:])) # Leave images as 50 x 50
-        im = np.array(data[:,:]).reshape((1, 1, shrink_size, shrink_size))
-        images = np.append(images, im, axis=0)
-        # recover_image = Image.fromarray(np.array(data[:,:]).reshape((10000, 1)).reshape((100, 100)), 'L')
-        # recover_image.show()
-
         labels_str.append(lab_dict[_file[:-4]])
-        print(q)
-        if q > 1000:
-           break
-
-    print(images.shape)
-    images = np.array(images[:])
-
+        img = load_img('../dog_data/train/000bec180eb18c7604dcecc8fe0dba07.jpg', target_size=(im_size, im_size))  # this is a PIL image
+        x = img_to_array(img)
+        x = x.reshape((1,) + x.shape)  # this is a Numpy array with shape (1, 3, 150, 150)
+        if (f == -1):
+            f = 1
+            X = np.empty(shape=(x.shape))
+        if (q == 1000):
+            break
+        X = np.append(X, x, axis=0)
     unique_labels = np.unique(np.array(labels_str))
     #one_hot_labels = to_categorical(labels_str, num_classes=unique_labels.size)
-    one_hot_labels = np.empty(shape=(unique_labels.shape[0], 0))
+    one_hot_labels = np.empty(shape=(0,unique_labels.shape[0]))
+    print(one_hot_labels.shape)
     for l in labels_str:
-        one_hot_labels = np.append(one_hot_labels, np.where(l == unique_labels, 1, 0).reshape((unique_labels.shape[0], 1)), axis=1)
-    print(images.shape, one_hot_labels.shape, unique_labels.shape)
-    return images, one_hot_labels, unique_labels, dog_files
+        one_hot_labels = np.append(one_hot_labels, 
+            np.where(l == unique_labels, 1, 0).reshape((1, unique_labels.shape[0])), 
+            axis=0)
+    return X, one_hot_labels
+x, lab = load_labels()
+print(lab.shape)
 
-def onehot_to_name(y_hat, label_names):
-    idx = np.argmax(y_hat)
-    return label_names[idx]
+datagen = ImageDataGenerator(
+        rotation_range=20,
+        width_shift_range=0.2,
+        height_shift_range=0.2,
+        rescale=1./255,
+        shear_range=0.1,
+        zoom_range=0.1,
+        horizontal_flip=True,
+        fill_mode='nearest')
 
-model_path = './fm_cnn_BN.h5'
-callbacks = [
-    EarlyStopping(
-        monitor='val_acc', 
-        patience=10,
-        mode='max',
-        verbose=1),
-    ModelCheckpoint(model_path,
-        monitor='val_acc', 
-        save_best_only=True, 
-        mode='max',
-        verbose=0)
-]
-#%% loading cell
-desired_size = 500
-shrink_size = 50
-# Images are now 1 x 50 x 50 so each row is an image
-training_images, training_labels, label_names, dog_files = load_data(desired_size, shrink_size)
-#%%
-
-print("Initializing Classifier")
-img_rows, img_cols = 50, 50
-input_shape = (img_rows, img_cols, 1)
-input_tensor = Input(shape=input_shape)  # this assumes K.image_data_format() == 'channels_last'
-droprate = 0.1
-num_classes = label_names.shape[0]
-filter_pixel = 3 # I believe this is the sub matrix that we are using to identify features. 
-
-
-# Pre trained model
-# create the base pre-trained model
-base_model = InceptionV3(weights='imagenet', include_top=True, input_shape=input_shape)
-
-# add a global spatial average pooling layer
-x = base_model.output
-x = GlobalAveragePooling2D(data_format='channels_last')(x)
-# let's add a fully-connected layer
-x = Dense(1024, activation='relu')(x)
-# and a logistic layer -- let's say we have 200 classes
-predictions = Dense(num_classes, activation='softmax')(x)
-
-# this is the model we will train
-model = Model(inputs=base_model.input, outputs=predictions)
-
-# first: train only the top layers (which were randomly initialized)
-# i.e. freeze all convolutional InceptionV3 layers
-for layer in base_model.layers:
-    layer.trainable = False
-
-# compile the model (should be done *after* setting layers to non-trainable)
-model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
-# compile
-model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
-
-
-model.summary()
+# compute quantities required for featurewise normalization
+# (std, mean, and principal components if ZCA whitening is applied)
+datagen.fit(x)
 
 #%% 
-history = model.fit(training_images, training_labels.T,
-        batch_size=128,
-        epochs=30,
-        verbose=1,
-        validation_data=(training_images, training_labels.T),shuffle=True,
-        callbacks=callbacks)
-print("fit done")
+from keras.models import Sequential
+from keras.layers import Conv2D, MaxPooling2D
+from keras.layers import Activation, Dropout, Flatten, Dense
 
-training_pc = model.evaluate(x=training_images, y=training_labels.T, batch_size=32)
-print("Training percent correct: ", training_pc[1])
+model = Sequential()
+model.add(Conv2D(32, (3, 3), input_shape=(im_size, im_size, 3)))
+model.add(Activation('sigmoid'))
+model.add(MaxPooling2D(pool_size=(2, 2), data_format="channels_last"))
 
-# testing_pc = classifier.evaluate(x=testing_images, y=testing_labels, batch_size=128)
-# print("Testing percent correct: ", testing_pc)
+model.add(Conv2D(32, (3, 3), data_format="channels_last"))
+model.add(Activation('sigmoid'))
+model.add(MaxPooling2D(pool_size=(2, 2), data_format="channels_last"))
+
+model.add(Conv2D(64, (3, 3), data_format="channels_last"))
+model.add(Activation('sigmoid'))
+model.add(MaxPooling2D(pool_size=(2, 2), data_format="channels_last"))
+
+model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
+model.add(Dense(64))
+model.add(Activation('sigmoid'))
+model.add(Dropout(0.2))
+model.add(Dense(lab.shape[1]))
+model.add(Activation('sigmoid'))
+
+# All parameter gradients will be clipped to
+# a maximum norm of 1.
+sgd = optimizers.SGD(lr=0.001, clipnorm=1.)
+model.compile(loss='categorical_crossentropy',
+              optimizer=sgd,
+              metrics=['categorical_accuracy'])
+model.summary()
+
+#%%  FIT
+batch_size = 20
+model.fit_generator(
+        datagen.flow(x, lab, batch_size=batch_size),
+        steps_per_epoch=len(x) / batch_size, # batch_size,
+        epochs=20
+        ) # batch size
+model.save_weights('first_try.h5')  # always save your weights after training or during training
+
+# %%
+print(x.shape)
+print(lab)
+for i in range(len(x)):
+    p = np.argmax(model.predict(x[i:i+1]))
+    a = np.argmax(lab[i:i+1])
+    print("i: {} p: {} a: {}".format(i, p, a))
