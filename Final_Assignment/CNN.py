@@ -9,6 +9,7 @@ from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Activation, LSTM, Dropout, BatchNormalization
 from keras.optimizers import  sgd
 from keras.utils import to_categorical
+from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras import metrics
 
 def percent_correct(y, y_hat):
@@ -16,6 +17,7 @@ def percent_correct(y, y_hat):
     one_hot_y_hat = np.where(y_hat == y_hat.max(axis=0)[None, :], 1, 0)
     return np.mean(np.where(y == one_hot_y_hat, 1, 0))
 
+# define path to save model
 
 
 def compute_predictions(x, w):
@@ -66,8 +68,8 @@ def load_data(desired_size, shrink_size):
 
         labels_str.append(lab_dict[_file[:-4]])
         print(q)
-        if q > 1000:
-           break
+        # if q > 1000:
+        #    break
 
     print(images.shape)
     images = np.array(images[:])
@@ -84,6 +86,19 @@ def onehot_to_name(y_hat, label_names):
     idx = np.argmax(y_hat)
     return label_names[idx]
 
+model_path = './fm_cnn_BN.h5'
+callbacks = [
+    EarlyStopping(
+        monitor='val_acc', 
+        patience=10,
+        mode='max',
+        verbose=1),
+    ModelCheckpoint(model_path,
+        monitor='val_acc', 
+        save_best_only=True, 
+        mode='max',
+        verbose=0)
+]
 #%%
 if __name__ == "__main__":
     desired_size = 500
@@ -139,11 +154,11 @@ if __name__ == "__main__":
 
     classifier.summary()
     history = classifier.fit(training_images, training_labels.T,
-            batch_size=200,
+            batch_size=128,
             epochs=100,
             verbose=1,
-            validation_data=(training_images, training_labels.T),shuffle=True)
-            # callbacks=callbacks)
+            validation_data=(training_images, training_labels.T),shuffle=True,
+            callbacks=callbacks)
     print("fit done")
 
     # classifier.add(Dense(1024, activation='relu', input_dim=shrink_size**2))
