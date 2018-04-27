@@ -1,110 +1,149 @@
-# https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html
+# Note: much of this code is from an example on Kaggle. 
+# Small modifications have been made, but this code
+# has been extremely helpful in understanding transfer learning
+# https://www.kaggle.com/gaborfodor/dog-breed-pretrained-keras-models-lb-0-3
+# and keras documentation from 
+# https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html%%
 #%%
-from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
-from keras import optimizers
-import os, sys
-import csv
+## Imports
 import numpy as np
+import pandas as pd
+import datetime as dt
+import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import ImageGrid
+from os import listdir, makedirs
+from os.path import join, exists, expanduser
+from tqdm import tqdm
+from sklearn.metrics import log_loss, accuracy_score
+from keras.preprocessing import image
+from keras.applications.vgg16 import VGG16
+from keras.applications.resnet50 import ResNet50
+from keras.applications import xception
+from keras.applications import inception_v3
+from keras.applications.vgg16 import preprocess_input, decode_predictions
+from sklearn.linear_model import LogisticRegression
+#%%  Cache things for speed
+cache_dir = expanduser(join('~', '.keras'))
+if not exists(cache_dir):
+    makedirs(cache_dir)
+models_dir = join(cache_dir, 'models')
+if not exists(models_dir):
+    makedirs(models_dir)
+
+#%% Use only the top K classes
+INPUT_SIZE = 224
+NUM_CLASSES = 16
+SEED = 1987
+data_dir = '../dog_data/'
+# This loads the labels into a table object
+labels = pd.read_csv(join(data_dir, 'labels.csv'))
+
+#%% Select top K breeds
+# Pick the top K 
+selected_breed_list = list(labels.groupby('breed').count().sort_values(by='id', ascending=False).head(NUM_CLASSES).index)
+labels = labels[labels['breed'].isin(selected_breed_list)]
+labels['target'] = 1
+# Order by number of images in that breed
+labels['rank'] = labels.groupby('breed').rank()['id']
+labels_pivot = labels.pivot('id', 'breed', 'target').reset_index().fillna(0)
+np.random.seed(seed=SEED)
+rnd = np.random.random(len(labels))
+# Make training 80%, validation 80%
+# Could turn into K fold validation
+train_idx = rnd < 0.8
+valid_idx = rnd >= 0.8
+y_train = labels_pivot[selected_breed_list].values
+ytr = y_train[train_idx]
+yv = y_train[valid_idx]
+
+def read_img(img_id, train_or_test, size):
+    """Read and resize image.
+    # Arguments
+        img_id: string
+        train_or_test: string 'train' or 'test'.
+        size: resize the original image.
+    # Returns
+        Image as numpy array.
+    """
+    img = image.load_img(join(data_dir, train_or_test, '%s.jpg' % img_id), target_size=size)
+    img = image.img_to_array(img)
+    return img
+
+#%% Xception feature
+
+INPUT_SIZE = 299
+POOLING = 'avg'
+x_train = np.zeros((len(labels), INPUT_SIZE, INPUT_SIZE, 3), dtype='float32')
+
+# Load images and shape to fit xception, which takes 299 by 299 channel last images
+for i, img_id in tqdm(enumerate(labels['id'])):
+    img = read_img(img_id, 'train', (INPUT_SIZE, INPUT_SIZE))
+    x = xception.preprocess_input(np.expand_dims(img.copy(), axis=0))
+    x_train[i] = x
+print('Train Images shape: {} size: {:,}'.format(x_train.shape, x_train.size))
+
+# Run through Xception to generates feature outputs
+Xtr = x_train[train_idx]
+Xv = x_train[valid_idx]
+print((Xtr.shape, Xv.shape, ytr.shape, yv.shape))
+xception_bottleneck = xception.Xception(weights='imagenet', include_top=False, pooling=POOLING)
+train_x_bf = xception_bottleneck.predict(Xtr, batch_size=32, verbose=1)
+valid_x_bf = xception_bottleneck.predict(Xv, batch_size=32, verbose=1)
+print('Xception train bottleneck features shape: {} size: {:,}'.format(train_x_bf.shape, train_x_bf.size))
+print('Xception valid bottleneck features shape: {} size: {:,}'.format(valid_x_bf.shape, valid_x_bf.size))
+
+#%% Run logistic regression on the FEATURES that Xception outputs
+
+logreg = LogisticRegression(multi_class='multinomial', solver='lbfgs', random_state=SEED)
+logreg.fit(train_x_bf, (ytr * range(NUM_CLASSES)).sum(axis=1))
+valid_probs = logreg.predict_proba(valid_x_bf)
+valid_preds = logreg.predict(valid_x_bf)
+print('Validation Xception LogLoss {}'.format(log_loss(yv, valid_probs)))
+print('Validation Xception Accuracy {}'.format(accuracy_score((yv * range(NUM_CLASSES)).sum(axis=1), valid_preds)))
+
+#%% Visual confirmation of performance
+
+def name_from_number(num, labels):
+    return labels[selected_breed_list].axes[1][num]
+
+def id_from_number(num, labels):
+    return labels['id'][valid_idx].iloc[num]
 
 
-im_size = 256
-def load_labels():
-    label_reader = csv.reader(open('../dog_data/labels.csv', 'r'))
-    lab_dict = {}
-    for row in label_reader:
-        k, v = row
-        lab_dict[k] = v
-    folder = "../dog_data/train"
-    dog_files = [f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
-    print("Working with {0} images".format(len(dog_files)))
-    labels_str = []
-    f = -1
-    X = -1
-    q = 0
-    for _file in dog_files:
-        q += 1
-        labels_str.append(lab_dict[_file[:-4]])
-        img = load_img('../dog_data/train/000bec180eb18c7604dcecc8fe0dba07.jpg', target_size=(im_size, im_size))  # this is a PIL image
-        x = img_to_array(img)
-        x = x.reshape((1,) + x.shape)  # this is a Numpy array with shape (1, 3, 150, 150)
-        if (f == -1):
-            f = 1
-            X = np.empty(shape=(x.shape))
-        if (q == 1000):
-            break
-        X = np.append(X, x, axis=0)
-    unique_labels = np.unique(np.array(labels_str))
-    #one_hot_labels = to_categorical(labels_str, num_classes=unique_labels.size)
-    one_hot_labels = np.empty(shape=(0,unique_labels.shape[0]))
-    print(one_hot_labels.shape)
-    for l in labels_str:
-        one_hot_labels = np.append(one_hot_labels, 
-            np.where(l == unique_labels, 1, 0).reshape((1, unique_labels.shape[0])), 
-            axis=0)
-    return X, one_hot_labels
-x, lab = load_labels()
-print(lab.shape)
+def plot_idx(idx, g_model, labels): 
+    predic = int(g_model.predict(valid_x_bf[idx:idx+1])[0])
+    predic_label = name_from_number(predic, labels)
+    
+    fig = plt.figure(1, figsize=(16, 16))
+    grid = ImageGrid(fig, 111, nrows_ncols=(1, 1), axes_pad=0.05)
+    ax = grid[0]
+    im_id = id_from_number(idx, labels)
+    img = read_img(im_id, 'train', (224, 224))
+    ax.imshow(img / 255.)
+    x = preprocess_input(np.expand_dims(img.copy(), axis=0))
+    ax.text(10, 180, 'PREDICTION %s ' % predic_label, color='w', backgroundcolor='k', alpha=0.8)
+    breed_name = labels_pivot[labels_pivot['id'] == im_id][selected_breed_list].idxmax(axis=1)
+    ax.text(10, 200, 'LABEL: %s' % breed_name, color='k', backgroundcolor='w', alpha=0.8)
+    ax.axis('off')
+    plt.savefig('img/validatoin_{}.png'.format(idx))
+    plt.show()
 
-datagen = ImageDataGenerator(
-        rotation_range=20,
-        width_shift_range=0.2,
-        height_shift_range=0.2,
-        rescale=1./255,
-        shear_range=0.1,
-        zoom_range=0.1,
-        horizontal_flip=True,
-        fill_mode='nearest')
 
-# compute quantities required for featurewise normalization
-# (std, mean, and principal components if ZCA whitening is applied)
-datagen.fit(x)
+# Plot first 30 
+for i in range(30):
+    plot_idx(i, logreg, labels_pivot)
 
-#%% 
-from keras.models import Sequential
-from keras.layers import Conv2D, MaxPooling2D
-from keras.layers import Activation, Dropout, Flatten, Dense
+valid_breeds = (yv * range(NUM_CLASSES)).sum(axis=1)
+error_idx = (valid_breeds != valid_preds)
 
-model = Sequential()
-model.add(Conv2D(32, (3, 3), input_shape=(im_size, im_size, 3)))
-model.add(Activation('sigmoid'))
-model.add(MaxPooling2D(pool_size=(2, 2), data_format="channels_last"))
-
-model.add(Conv2D(32, (3, 3), data_format="channels_last"))
-model.add(Activation('sigmoid'))
-model.add(MaxPooling2D(pool_size=(2, 2), data_format="channels_last"))
-
-model.add(Conv2D(64, (3, 3), data_format="channels_last"))
-model.add(Activation('sigmoid'))
-model.add(MaxPooling2D(pool_size=(2, 2), data_format="channels_last"))
-
-model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-model.add(Dense(64))
-model.add(Activation('sigmoid'))
-model.add(Dropout(0.2))
-model.add(Dense(lab.shape[1]))
-model.add(Activation('sigmoid'))
-
-# All parameter gradients will be clipped to
-# a maximum norm of 1.
-sgd = optimizers.SGD(lr=0.001, clipnorm=1.)
-model.compile(loss='categorical_crossentropy',
-              optimizer=sgd,
-              metrics=['categorical_accuracy'])
-model.summary()
-
-#%%  FIT
-batch_size = 20
-model.fit_generator(
-        datagen.flow(x, lab, batch_size=batch_size),
-        steps_per_epoch=len(x) / batch_size, # batch_size,
-        epochs=20
-        ) # batch size
-model.save_weights('first_try.h5')  # always save your weights after training or during training
-
-# %%
-print(x.shape)
-print(lab)
-for i in range(len(x)):
-    p = np.argmax(model.predict(x[i:i+1]))
-    a = np.argmax(lab[i:i+1])
-    print("i: {} p: {} a: {}".format(i, p, a))
+# Plot the errors
+for img_id, breed, pred in zip(labels.loc[valid_idx, 'id'].values[error_idx],
+                                [selected_breed_list[int(b)] for b in valid_preds[error_idx]],
+                                [selected_breed_list[int(b)] for b in valid_breeds[error_idx]]):
+    fig, ax = plt.subplots(figsize=(5,5))
+    img = read_img(img_id, 'train', (299, 299))
+    ax.imshow(img / 255.)
+    ax.text(10, 250, 'Prediction: %s' % pred, color='w', backgroundcolor='r', alpha=0.8)
+    ax.text(10, 270, 'LABEL: %s' % breed, color='k', backgroundcolor='g', alpha=0.8)
+    ax.axis('off')
+    plt.show()        
