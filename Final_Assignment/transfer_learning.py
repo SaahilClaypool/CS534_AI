@@ -32,7 +32,7 @@ if not exists(models_dir):
 
 #%% Use only the top K classes
 INPUT_SIZE = 224
-NUM_CLASSES = 16
+NUM_CLASSES = 32
 SEED = 1987
 data_dir = '../dog_data/'
 # This loads the labels into a table object
@@ -121,12 +121,12 @@ def plot_idx(idx, g_model, labels):
     img = read_img(im_id, 'train', (224, 224))
     ax.imshow(img / 255.)
     x = preprocess_input(np.expand_dims(img.copy(), axis=0))
-    ax.text(10, 180, 'PREDICTION %s ' % predic_label, color='w', backgroundcolor='k', alpha=0.8)
+    ax.text(10, 180, 'PREDICTION %s ' % predic_label, color='w', backgroundcolor='k', alpha=0.8, fontsize=20)
     breed_name = labels_pivot[labels_pivot['id'] == im_id][selected_breed_list].idxmax(axis=1)
-    ax.text(10, 200, 'LABEL: %s' % breed_name, color='k', backgroundcolor='w', alpha=0.8)
+    ax.text(10, 200, 'LABEL: %s' % breed_name, color='k', backgroundcolor='w', alpha=0.8, fontsize=20)
     ax.axis('off')
-    plt.savefig('img/validatoin_{}.png'.format(idx))
-    plt.show()
+    plt.savefig('img/validation_{}.png'.format(idx))
+    # plt.show()
 
 
 # Plot first 30 
@@ -143,7 +143,46 @@ for img_id, breed, pred in zip(labels.loc[valid_idx, 'id'].values[error_idx],
     fig, ax = plt.subplots(figsize=(5,5))
     img = read_img(img_id, 'train', (299, 299))
     ax.imshow(img / 255.)
-    ax.text(10, 250, 'Prediction: %s' % pred, color='w', backgroundcolor='r', alpha=0.8)
-    ax.text(10, 270, 'LABEL: %s' % breed, color='k', backgroundcolor='g', alpha=0.8)
+    ax.text(10, 250, 'Prediction: %s, Confidence" %s' % pred, color='w', backgroundcolor='r', alpha=0.8, fontsize=20)
+    ax.text(10, 270, 'LABEL: %s' % breed, color='k', backgroundcolor='g', alpha=0.8, fontsize=20)
     ax.axis('off')
-    plt.show()        
+    plt.savefig('img/error_{}.png'.format(img_id))
+    # plt.show()        
+
+#%% K Fold
+import numpy as np
+A = np.arange(81).reshape(9,9)
+B = np.arange(27).reshape(9,3)
+def test_folds(x_train, y_train, k=5):
+    folds = np.split(x_train, k)
+    fold_labels = np.split(y_train, k)
+    
+    for i in range(k): 
+        print("Fold {} of {}".format(i,k))
+        validation = folds[i]
+        v_labels = fold_labels[i]
+        train = np.array(folds[:i] + folds[i:])
+        t_labels = np.array(fold_labels[:i] + folds[i:])
+        logloss, acc = run_fold(train, validation, t_labels, v_labels)
+        print("\n")
+
+def run_fold(Xtr, Xv, ytr, yv):
+    POOLING = 'avg'
+    print((Xtr.shape, Xv.shape, ytr.shape, yv.shape))
+    xception_bottleneck = xception.Xception(weights='imagenet', include_top=False, pooling=POOLING)
+    train_x_bf = xception_bottleneck.predict(Xtr, batch_size=32, verbose=1)
+    valid_x_bf = xception_bottleneck.predict(Xv, batch_size=32, verbose=1)
+    print('Xception train bottleneck features shape: {} size: {:,}'.format(train_x_bf.shape, train_x_bf.size))
+    print('Xception valid bottleneck features shape: {} size: {:,}'.format(valid_x_bf.shape, valid_x_bf.size))
+
+    logreg = LogisticRegression(multi_class='multinomial', solver='lbfgs', random_state=SEED)
+    logreg.fit(train_x_bf, (ytr * range(NUM_CLASSES)).sum(axis=1))
+    valid_probs = logreg.predict_proba(valid_x_bf)
+    valid_preds = logreg.predict(valid_x_bf)
+    logloss = log_loss(yv, valid_probs)
+    acc = accuracy_score((yv * range(NUM_CLASSES)).sum(axis=1), valid_preds)
+    print('Validation Xception LogLoss {}'.format(logloss))
+    print('Validation Xception Accuracy {}'.format(acc))
+    return logloss, acc
+
+test_folds(x_train, y_train)
