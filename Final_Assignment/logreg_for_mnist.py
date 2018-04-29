@@ -33,7 +33,7 @@ def compute_grad(x, y_hat, y):
     return np.dot(x, (y_hat - y).T) / x.shape[1]
 
 
-def lin_reg(data, labels):
+def log_reg(data, labels):
     # hyper parameters
     learn_rate = 0.01
     minibatch_size = 500
@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
     print(training_images.shape, testing_images.shape)
 
-    w = lin_reg(training_images, training_labels)
+    w = log_reg(training_images, training_labels)
 
     training_y_hat = compute_predictions(training_images, w)
     training_pc = percent_correct(training_labels, training_y_hat)
